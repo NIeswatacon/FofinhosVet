@@ -1,17 +1,8 @@
 package br.unifor.fazeragendamento.model;
 
+import jakarta.persistence.*;
 import java.math.BigDecimal;
 import java.time.LocalDate;
-
-import jakarta.persistence.Entity;
-import jakarta.persistence.EnumType;
-import jakarta.persistence.Enumerated;
-import jakarta.persistence.GeneratedValue;
-import jakarta.persistence.GenerationType;
-import jakarta.persistence.Column;
-import jakarta.persistence.Id;
-import jakarta.persistence.Table;
-
 
 @Entity
 @Table(name = "agendamentos")
@@ -21,18 +12,33 @@ public class Agendamento {
     @GeneratedValue(strategy = GenerationType.IDENTITY)
     private Long id;
 
+    // --- CAMPO ADICIONADO ---
+    @Column(nullable = false, name = "cliente_id")
+    private Long clienteId;
+
     private LocalDate data;
 
+    @Enumerated(EnumType.STRING)
     private ServicoEnum servico;
 
     private String nomeFuncionario;
-
     private String nomePet;
-
     private String nomeCliente;
 
     @Column(name = "valor_servico")
     private BigDecimal valorServico;
+
+    @Enumerated(EnumType.STRING)
+    @Column(name = "status_pagamento", nullable = false)
+    private StatusPagamento statusPagamento = StatusPagamento.PENDENTE;
+
+    public enum StatusPagamento {
+        PENDENTE,
+        PAGO,
+        CANCELADO
+    }
+
+    // Getters e Setters
 
     public Long getId() {
         return id;
@@ -40,6 +46,14 @@ public class Agendamento {
 
     public void setId(Long id) {
         this.id = id;
+    }
+
+    public Long getClienteId() {
+        return clienteId;
+    }
+
+    public void setClienteId(Long clienteId) {
+        this.clienteId = clienteId;
     }
 
     public LocalDate getData() {
@@ -50,7 +64,6 @@ public class Agendamento {
         this.data = data;
     }
 
-    @Enumerated(EnumType.STRING) // Garante que o enum seja salvo como String no banco
     public ServicoEnum getServico() {
         return servico;
     }
@@ -83,7 +96,6 @@ public class Agendamento {
         this.nomeCliente = nomeCliente;
     }
 
-    // Getters e Setters
     public BigDecimal getValorServico() {
         return valorServico;
     }
@@ -92,4 +104,11 @@ public class Agendamento {
         this.valorServico = valorServico;
     }
 
+    public StatusPagamento getStatusPagamento() {
+        return statusPagamento;
+    }
+
+    public void setStatusPagamento(StatusPagamento statusPagamento) {
+        this.statusPagamento = statusPagamento;
+    }
 }

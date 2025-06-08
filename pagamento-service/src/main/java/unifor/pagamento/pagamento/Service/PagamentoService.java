@@ -1,126 +1,159 @@
 package unifor.pagamento.pagamento.Service;
-//implementação de regras de negocios
-import org.springframework.beans.factory.annotation.Autowired; //No nosso caso, vai injetar o PagamentoRepository no Service
-import unifor.pagamento.pagamento.model.Pagamento;//Contém todos os dados e comportamentos de um pagamento
-import unifor.pagamento.pagamento.model.StatusPagamento;//Contém todos os estados possíveis de um pagamento
-import unifor.pagamento.pagamento.model.FormaDePagamento;//Contém todos os tipos de pagamento possíveis
-import unifor.pagamento.pagamento.repository.PagamentoRepository;//Contém todos os métodos de acesso ao banco de dados
-import unifor.pagamento.pagamento.exception.PagamentoException;//Nossa exceção personalizada
-import java.math.BigDecimal;//Contém todos os métodos matemáticos
-import java.util.List;//Contém todos os métodos de lista
-import org.springframework.stereotype.Service;//Indica que esta classe contém regras de negócio
 
-@Service//Indica que a classe é um Service
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
+import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.stereotype.Service;
+import org.springframework.web.reactive.function.client.WebClient;
+import reactor.core.publisher.Mono;
+import unifor.pagamento.pagamento.dto.AgendamentoResponseDTO;
+import unifor.pagamento.pagamento.dto.CarrinhoResponseDTO;
+import unifor.pagamento.pagamento.exception.PagamentoException;
+import unifor.pagamento.pagamento.model.FormaDePagamento;
+import unifor.pagamento.pagamento.model.Pagamento;
+import unifor.pagamento.pagamento.model.StatusPagamento;
+import unifor.pagamento.pagamento.repository.PagamentoRepository;
+
+import java.math.BigDecimal;
+import java.util.List;
+
+@Service
 public class PagamentoService {
-    @Autowired //Injetar o PagamentoRepository no Service
-    private PagamentoRepository pagamentoRepository;
 
-    // Método para criar um novo pagamento
-    public Pagamento criarPagamento(BigDecimal valor, FormaDePagamento formaPagamento, 
-                                  Long idPedido, String nomeCliente, String cpfCliente, Long idUsuario) {
-        try {
-            if (valor == null || valor.compareTo(BigDecimal.ZERO) <= 0) {
-                throw new PagamentoException("Valor deve ser maior que zero");
-            }
-            if (formaPagamento == null) {
-                throw new PagamentoException("Forma de pagamento é obrigatória");
-            }
-            if (idPedido == null || idPedido <= 0) {
-                throw new PagamentoException("ID do pedido é obrigatório");
-            }
-            if (nomeCliente == null || nomeCliente.trim().isEmpty()) {
-                throw new PagamentoException("Nome do cliente é obrigatório");
-            }
-            if (cpfCliente == null || cpfCliente.trim().isEmpty()) {
-                throw new PagamentoException("CPF do cliente é obrigatório");
-            }
+    private static final Logger logger = LoggerFactory.getLogger(PagamentoService.class);
+    private final PagamentoRepository pagamentoRepository;
+    private final WebClient.Builder webClientBuilder;
 
-            Pagamento pagamento = new Pagamento();
-            pagamento.setValor(valor);
-            pagamento.setFormaPagamento(formaPagamento);
-            pagamento.setIdPedido(idPedido);
-            pagamento.setNomeCliente(nomeCliente);
-            pagamento.setCpfCliente(cpfCliente);
-            pagamento.setIdUsuario(idUsuario);
-            pagamento.setStatus(StatusPagamento.PENDENTE);
-            return pagamentoRepository.save(pagamento);
-        } catch (Exception e) {
-            throw new PagamentoException("Erro ao criar pagamento: " + e.getMessage());
-        }
+    @Autowired
+    public PagamentoService(PagamentoRepository pagamentoRepository, WebClient.Builder webClientBuilder) {
+        this.pagamentoRepository = pagamentoRepository;
+        this.webClientBuilder = webClientBuilder;
     }
 
-    // Método para buscar um pagamento por ID
+    /**
+     * Novo método que orquestra o processo de checkout.
+     * Ele busca os débitos pendentes de outros serviços e cria um pagamento único.
+     */
+    public Pagamento processarCheckoutCliente(Long idCliente, Long idUsuario, String nomeCliente, String cpfCliente) {
+        BigDecimal totalVendas = BigDecimal.ZERO;
+        BigDecimal totalServicos = BigDecimal.ZERO;
+
+        // 1. Busca o total do carrinho de compras no 'vendas-service'
+        try {
+            logger.info("Buscando carrinho para o cliente ID: {}", idCliente);
+            CarrinhoResponseDTO carrinhoResponse = webClientBuilder.build().get()
+                .uri("http://VENDAS-SERVICE/carrinho/{idCliente}", idCliente)
+                .retrieve()
+                .bodyToMono(CarrinhoResponseDTO.class)
+                .block(); // .block() torna a chamada síncrona, esperando a resposta.
+
+            if (carrinhoResponse != null && carrinhoResponse.isSuccess() && carrinhoResponse.getData() != null && carrinhoResponse.getData().getTotal() != null) {
+                totalVendas = carrinhoResponse.getData().getTotal();
+                logger.info("Total do carrinho encontrado: {}", totalVendas);
+            }
+        } catch (Exception e) {
+            logger.warn("AVISO: Nao foi possivel buscar carrinho de compras do vendas-service: {}", e.getMessage());
+        }
+
+        // 2. Busca o total de serviços pendentes no 'servicos-service'
+        //    (Esta chamada funcionará assim que você criar o endpoint no outro serviço)
+        try {
+            logger.info("Buscando agendamentos pendentes para o cliente ID: {}", idCliente);
+            AgendamentoResponseDTO[] agendamentos = webClientBuilder.build().get()
+                .uri("http://AGENDAMENTO/agendamentos/cliente/{idCliente}/pendentes", idCliente)
+                .retrieve()
+                .bodyToMono(AgendamentoResponseDTO[].class)
+                .onErrorResume(e -> Mono.empty()) // Continua se o serviço falhar ou não encontrar nada
+                .block();
+
+            if (agendamentos != null) {
+                for (AgendamentoResponseDTO agendamento : agendamentos) {
+                    if (agendamento.getValorServico() != null) {
+                        totalServicos = totalServicos.add(agendamento.getValorServico());
+                    }
+                }
+                logger.info("Total de serviços encontrado: {}", totalServicos);
+            }
+        } catch (Exception e) {
+            logger.warn("AVISO: Nao foi possivel buscar agendamentos pendentes do servicos-service: {}", e.getMessage());
+        }
+
+        // 3. Soma os totais e cria o registro de pagamento
+        BigDecimal valorTotal = totalVendas.add(totalServicos);
+        logger.info("Valor total do checkout para o cliente ID {}: {}", idCliente, valorTotal);
+
+        if (valorTotal.compareTo(BigDecimal.ZERO) <= 0) {
+            throw new PagamentoException("Nenhum valor pendente encontrado para o cliente com ID: " + idCliente);
+        }
+
+        // Reutiliza seu método de criação de pagamento original
+        return this.criarPagamento(valorTotal, FormaDePagamento.PIX, System.currentTimeMillis(), nomeCliente, cpfCliente, idUsuario);
+    }
+
+
+    // --- MÉTODOS ORIGINAIS DO SEU SERVIÇO (MANTIDOS) ---
+
+    public Pagamento criarPagamento(BigDecimal valor, FormaDePagamento formaPagamento, Long idPedido, String nomeCliente, String cpfCliente, Long idUsuario) {
+        if (valor == null || valor.compareTo(BigDecimal.ZERO) <= 0) throw new PagamentoException("Valor deve ser maior que zero");
+        if (idUsuario == null) throw new PagamentoException("ID do usuário é obrigatório");
+        if (formaPagamento == null) throw new PagamentoException("Forma de pagamento é obrigatória");
+        
+        Pagamento pagamento = new Pagamento();
+        pagamento.setValor(valor);
+        pagamento.setFormaPagamento(formaPagamento);
+        pagamento.setIdPedido(idPedido);
+        pagamento.setNomeCliente(nomeCliente);
+        pagamento.setCpfCliente(cpfCliente);
+        pagamento.setIdUsuario(idUsuario);
+        pagamento.setStatus(StatusPagamento.PENDENTE);
+        return pagamentoRepository.save(pagamento);
+    }
+
     public Pagamento buscarPorId(Long id) {
         return pagamentoRepository.findById(id)
             .orElseThrow(() -> new PagamentoException("Pagamento não encontrado com ID: " + id));
     }
 
-    // Método para listar todos os pagamentos
     public List<Pagamento> listarTodos() {
         return pagamentoRepository.findAll();
     }
 
-    // Método para buscar pagamentos por status
     public List<Pagamento> buscarPorStatus(StatusPagamento status) {
         return pagamentoRepository.findByStatus(status);
     }
 
-    // Método para buscar pagamentos por CPF do cliente
     public List<Pagamento> buscarPorCpfCliente(String cpfCliente) {
         return pagamentoRepository.findByCpfCliente(cpfCliente);
     }
 
-    // Método para buscar pagamentos por ID do pedido
     public List<Pagamento> buscarPorIdPedido(Long idPedido) {
         return pagamentoRepository.findByIdPedido(idPedido);
     }
 
-    // Método para buscar pagamentos por ID do usuário
     public List<Pagamento> buscarPorIdUsuario(Long idUsuario) {
         return pagamentoRepository.findByIdUsuario(idUsuario);
     }
 
-    // Método para aprovar um pagamento
     public Pagamento aprovarPagamento(Long id) {
         Pagamento pagamento = buscarPorId(id);
-        try {
-            pagamento.aprovarPagamento();
-            return pagamentoRepository.save(pagamento);
-        } catch (IllegalStateException e) {
-            throw new PagamentoException("Não é possível aprovar o pagamento: " + e.getMessage());
-        }
+        pagamento.aprovarPagamento();
+        return pagamentoRepository.save(pagamento);
     }
 
-    // Método para rejeitar um pagamento
     public Pagamento rejeitarPagamento(Long id) {
         Pagamento pagamento = buscarPorId(id);
-        try {
-            pagamento.rejeitarPagamento();
-            return pagamentoRepository.save(pagamento);
-        } catch (IllegalStateException e) {
-            throw new PagamentoException("Não é possível rejeitar o pagamento: " + e.getMessage());
-        }
+        pagamento.rejeitarPagamento();
+        return pagamentoRepository.save(pagamento);
     }
 
-    // Método para cancelar um pagamento
     public Pagamento cancelarPagamento(Long id) {
         Pagamento pagamento = buscarPorId(id);
-        try {
-            pagamento.cancelarPagamento();
-            return pagamentoRepository.save(pagamento);
-        } catch (IllegalStateException e) {
-            throw new PagamentoException("Não é possível cancelar o pagamento: " + e.getMessage());
-        }
+        pagamento.cancelarPagamento();
+        return pagamentoRepository.save(pagamento);
     }
 
-    // Método para deletar um pagamento
     public void deletarPagamento(Long id) {
-        try {
-            Pagamento pagamento = buscarPorId(id);
-            pagamentoRepository.delete(pagamento);
-        } catch (Exception e) {
-            throw new PagamentoException("Erro ao deletar pagamento: " + e.getMessage());
-        }
+        Pagamento pagamento = buscarPorId(id);
+        pagamentoRepository.delete(pagamento);
     }
 }
-

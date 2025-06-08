@@ -1,11 +1,10 @@
 import { Request, Response, NextFunction } from 'express';
 import type { Carrinho } from '../types/carrinho/carrinho';
 import type { ItemCarrinho } from '../types/carrinho/itemCarrinho';
-import { pool } from '../database'; // Importar o pool de conexões
+import { pool } from '../database';
 import { RowDataPacket, ResultSetHeader } from 'mysql2';
-import type { ProdutoBase } from '../types/produtos/produtoBase'; // Assumindo que ProdutoBase tem nome e preco
+import type { ProdutoBase } from '../types/produtos/produtoBase';
 
-// Função auxiliar para calcular e atualizar o total do carrinho
 async function atualizarTotalCarrinho(idCarrinho: number): Promise<number> {
   const [itensResult] = await pool.execute<RowDataPacket[] & { quantidade: number; preco: number }[]>(
     `SELECT ic.quantidade, pb.preco 

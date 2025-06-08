@@ -6,7 +6,9 @@ import unifor.pagamento.pagamento.model.Pagamento;        // Nossa classe de pag
 import unifor.pagamento.pagamento.model.StatusPagamento;  // Enum de status
 // Enum de forma de pagamento
 import unifor.pagamento.pagamento.Service.PagamentoService;  // Nosso service que criamos
-  // Para valores monetários
+import unifor.pagamento.pagamento.exception.PagamentoException;
+
+// Para valores monetários
 import java.util.List;        // Para listas de pagamentos
 
 @RestController
@@ -102,4 +104,17 @@ public class PagamentoController {
     public ResponseEntity<List<Pagamento>> buscarPorIdUsuario(@PathVariable Long idUsuario) {
         return ResponseEntity.ok(pagamentoService.buscarPorIdUsuario(idUsuario));
     }
+
+    public record CheckoutRequest(Long idUsuario, String nomeCliente, String cpfCliente) {}
+
+    @PostMapping("/checkout/{idCliente}")
+    public ResponseEntity<Pagamento> checkout(@PathVariable Long idCliente, @RequestBody CheckoutRequest request) {
+        try {
+            Pagamento pagamentoFinal = pagamentoService.processarCheckoutCliente(
+                idCliente, request.idUsuario(), request.nomeCliente(), request.cpfCliente());
+            return ResponseEntity.ok(pagamentoFinal);
+        } catch (PagamentoException e) {
+            return ResponseEntity.badRequest().body(null);
+        }
+}
 }
