@@ -1,22 +1,25 @@
 package br.com.petshop.conta_service.controller;
 
+import br.com.petshop.conta_service.dto.ClienteDTO;
+import br.com.petshop.conta_service.dto.PetDTO;
 import br.com.petshop.conta_service.model.Cliente;
 import br.com.petshop.conta_service.model.Pet;
 import br.com.petshop.conta_service.service.ClienteService;
 import br.com.petshop.conta_service.service.PetService;
-
+import jakarta.validation.Valid;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.*;
 
 import java.util.List;
+import java.util.stream.Collectors;
 
-@RestController 
-@RequestMapping("/api/contas/clientes") 
+@RestController
+@RequestMapping("/api/contas/clientes")
 public class ClienteController {
 
-        private final ClienteService clienteService;
+    private final ClienteService clienteService;
     private final PetService petService;
 
     @Autowired
@@ -25,32 +28,78 @@ public class ClienteController {
         this.petService = petService;
     }
 
-    @PostMapping
-    public ResponseEntity<Cliente> criarCliente(@RequestBody Cliente cliente) {
-        Cliente novoCliente = clienteService.criarCliente(cliente);
-        return new ResponseEntity<>(novoCliente, HttpStatus.CREATED);
+
+    private ClienteDTO clienteToDTO(Cliente cliente) {
+        ClienteDTO dto = new ClienteDTO();
+        dto.setId(cliente.getId());
+        dto.setNome(cliente.getNome());
+        dto.setEmail(cliente.getEmail());
+        dto.setCpf(cliente.getCpf());
+        dto.setTelefone(cliente.getTelefone());
+        dto.setEndereco(cliente.getEndereco());
+        return dto;
     }
 
-    @GetMapping("/{clienteId}")
-    public ResponseEntity<Cliente> buscarClientePorId(@PathVariable Long clienteId) {
-        return clienteService.buscarClientePorId(clienteId)
-                .map(cliente -> new ResponseEntity<>(cliente, HttpStatus.OK))
-                .orElse(new ResponseEntity<>(HttpStatus.NOT_FOUND));
+    private Cliente clienteToEntity(ClienteDTO dto) {
+        Cliente cliente = new Cliente();
+        cliente.setNome(dto.getNome());
+        cliente.setEmail(dto.getEmail());
+        cliente.setCpf(dto.getCpf());
+        cliente.setTelefone(dto.getTelefone());
+        cliente.setEndereco(dto.getEndereco());
+        return cliente;
+    }
+
+    private PetDTO petToDTO(Pet pet) {
+        PetDTO dto = new PetDTO();
+        dto.setId(pet.getId());
+        dto.setNome(pet.getNome());
+        dto.setEspecie(pet.getEspecie());
+        dto.setRaca(pet.getRaca());
+        dto.setDataNascimento(pet.getDataNascimento());
+        return dto;
+    }
+
+    private Pet petToEntity(PetDTO dto) {
+        Pet pet = new Pet();
+        pet.setNome(dto.getNome());
+        pet.setEspecie(dto.getEspecie());
+        pet.setRaca(dto.getRaca());
+        pet.setDataNascimento(dto.getDataNascimento());
+        return pet;
+    }
+
+    @PostMapping
+    public ResponseEntity<ClienteDTO> criarCliente(@Valid @RequestBody ClienteDTO clienteDTO) {
+        Cliente cliente = clienteToEntity(clienteDTO);
+        Cliente novoCliente = clienteService.criarCliente(cliente);
+        return new ResponseEntity<>(clienteToDTO(novoCliente), HttpStatus.CREATED);
     }
 
     @GetMapping
-    public ResponseEntity<List<Cliente>> listarTodosClientes() {
-        List<Cliente> clientes = clienteService.listarTodosClientes();
-        return new ResponseEntity<>(clientes, HttpStatus.OK);
+    public ResponseEntity<List<ClienteDTO>> listarTodosClientes() {
+        List<ClienteDTO> clientes = clienteService.listarTodosClientes().stream()
+                .map(this::clienteToDTO)
+                .collect(Collectors.toList());
+        return ResponseEntity.ok(clientes);
+    }
+
+    @GetMapping("/{clienteId}")
+    public ResponseEntity<ClienteDTO> buscarClientePorId(@PathVariable Long clienteId) {
+        return clienteService.buscarClientePorId(clienteId)
+                .map(this::clienteToDTO)
+                .map(ResponseEntity::ok)
+                .orElse(ResponseEntity.notFound().build());
     }
 
     @PutMapping("/{clienteId}")
-    public ResponseEntity<Cliente> atualizarCliente(@PathVariable Long clienteId, @RequestBody Cliente cliente) {
+    public ResponseEntity<ClienteDTO> atualizarCliente(@PathVariable Long clienteId, @Valid @RequestBody ClienteDTO clienteDTO) {
         try {
+            Cliente cliente = clienteToEntity(clienteDTO);
             Cliente clienteAtualizado = clienteService.atualizarCliente(clienteId, cliente);
-            return new ResponseEntity<>(clienteAtualizado, HttpStatus.OK);
+            return ResponseEntity.ok(clienteToDTO(clienteAtualizado));
         } catch (RuntimeException e) {
-            return new ResponseEntity<>(HttpStatus.NOT_FOUND);
+            return ResponseEntity.notFound().build();
         }
     }
 
@@ -58,51 +107,41 @@ public class ClienteController {
     public ResponseEntity<Void> deletarCliente(@PathVariable Long clienteId) {
         try {
             clienteService.deletarCliente(clienteId);
-            return new ResponseEntity<>(HttpStatus.NO_CONTENT);
+            return ResponseEntity.noContent().build();
         } catch (RuntimeException e) {
-            return new ResponseEntity<>(HttpStatus.NOT_FOUND);
+            return ResponseEntity.notFound().build();
         }
     }
 
 
     @PostMapping("/{clienteId}/pets")
-    public ResponseEntity<Pet> criarPetParaCliente(@PathVariable Long clienteId, @RequestBody Pet pet) {
+    public ResponseEntity<PetDTO> criarPetParaCliente(@PathVariable Long clienteId, @RequestBody PetDTO petDTO) {
         try {
+            Pet pet = petToEntity(petDTO);
             Pet novoPet = petService.criarPet(clienteId, pet);
-            return new ResponseEntity<>(novoPet, HttpStatus.CREATED);
+            return new ResponseEntity<>(petToDTO(novoPet), HttpStatus.CREATED);
         } catch (RuntimeException e) {
             return ResponseEntity.status(HttpStatus.BAD_REQUEST).body(null);
         }
     }
 
     @GetMapping("/{clienteId}/pets")
-    public ResponseEntity<List<Pet>> listarPetsDoCliente(@PathVariable Long clienteId) {
+    public ResponseEntity<List<PetDTO>> listarPetsDoCliente(@PathVariable Long clienteId) {
         try {
-            List<Pet> pets = petService.listarPetsPorCliente(clienteId);
-            return new ResponseEntity<>(pets, HttpStatus.OK);
+            List<PetDTO> pets = petService.listarPetsPorCliente(clienteId).stream()
+                    .map(this::petToDTO)
+                    .collect(Collectors.toList());
+            return ResponseEntity.ok(pets);
         } catch (RuntimeException e) {
-            return ResponseEntity.status(HttpStatus.NOT_FOUND).body(null);
+            return ResponseEntity.notFound().build();
         }
     }
 
     @GetMapping("/{clienteId}/pets/{petId}")
-public ResponseEntity<Pet> buscarPetDoCliente(@PathVariable Long clienteId, @PathVariable Long petId) {
-    return petService.buscarPetDoClientePorId(clienteId, petId)
-            .map(pet -> ResponseEntity.ok(pet)) 
-            .orElse(ResponseEntity.notFound().build());
-}
-
-@PutMapping("/{clienteId}/pets/{petId}")
-public ResponseEntity<Pet> atualizarPetDoCliente(@PathVariable Long clienteId, @PathVariable Long petId, @RequestBody Pet pet) {
-    return ResponseEntity.ok().build();
-}
-
-@DeleteMapping("/{clienteId}/pets/{petId}")
-public ResponseEntity<Void> deletarPetDoCliente(@PathVariable Long clienteId, @PathVariable Long petId) {
-    petService.buscarPetDoClientePorId(clienteId, petId).ifPresent(pet -> {
-        petService.deletarPet(pet.getId());
-    });
-    return ResponseEntity.noContent().build();
-}
-
+    public ResponseEntity<PetDTO> buscarPetDoCliente(@PathVariable Long clienteId, @PathVariable Long petId) {
+        return petService.buscarPetDoClientePorId(clienteId, petId)
+                .map(this::petToDTO)
+                .map(ResponseEntity::ok)
+                .orElse(ResponseEntity.notFound().build());
+    }
 }
