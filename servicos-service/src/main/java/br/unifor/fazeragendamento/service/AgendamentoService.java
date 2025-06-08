@@ -26,7 +26,7 @@ public class AgendamentoService {
     public AgendamentoService(AgendamentoRepository agendamentoRepository, WebClient.Builder webClientBuilder) {
         this.agendamentoRepository = agendamentoRepository;
         // A URL agora usa o nome do serviço registrado no Eureka
-        this.webClient = webClientBuilder.baseUrl("http://CONTA-SERVICE/api/contas").build();
+        this.webClient = webClientBuilder.baseUrl("http://CONTA/api/contas").build();
     }
 
     public Agendamento criarAgendamento(AgendamentoRequestDTO dto) {
