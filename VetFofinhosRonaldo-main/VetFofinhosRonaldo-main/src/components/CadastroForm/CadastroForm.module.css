@@ -1,0 +1,65 @@
+.form {
+  display: flex;
+  flex-direction: column;
+  /* gap: 1rem; O gap agora será entre as inputRows e dentro delas */
+  width: 100%;
+  max-width: 600px; /* Aumentado para acomodar melhor os campos lado a lado */
+  padding: 2rem;
+  background-color: rgba(255, 255, 255, 0.05);
+  border-radius: 8px;
+  box-shadow: 0 4px 12px rgba(0, 0, 0, 0.1);
+}
+
+.inputRow {
+  display: flex;
+  flex-direction: row; /* Alinha os wrappers de input lado a lado */
+  gap: 1rem; /* Espaçamento entre os campos na mesma linha */
+  margin-bottom: 1.5rem; /* Espaçamento entre as linhas de input */
+  width: 100%;
+}
+
+.inputFieldWrapper {
+  flex: 1; /* Faz com que cada wrapper de input ocupe espaço igual na linha */
+  display: flex;
+  flex-direction: column; /* Mantém o label acima do input */
+}
+
+
+/* Garante que o InputField (assumindo que renderiza um input ou uma div com input) ocupe toda a largura do seu wrapper */
+.inputFieldWrapper input,
+.inputFieldWrapper > div > input { /* Cobrindo casos onde InputField pode ter uma div interna */
+  width: 100%;
+  box-sizing: border-box; /* Importante para que padding/border não aumentem a largura total */
+}
+
+.label {
+  font-weight: 500;
+  font-size: 0.875rem; /* 14px */
+  margin-bottom: 0.25rem;
+  display: block;
+  text-align: left;
+}
+
+.successMessage,
+.errorMessage {
+  padding: 0.75rem 1rem;
+  margin-top: 1rem; /* Espaço acima da mensagem */
+  border-radius: 4px;
+  text-align: center;
+  font-size: 0.9rem;
+  border-width: 1px;
+  border-style: solid;
+}
+
+.successMessage {
+  color: #155724;
+  background-color: #d4edda;
+  border-color: #c3e6cb;
+}
+
+.errorMessage {
+  color: #721c24;
+  background-color: #f8d7da;
+  border-color: #f5c6cb;
+}
+

@@ -1,0 +1,195 @@
+.home-container {
+  position: relative;
+  min-height: 100vh;
+  width: 100vw;
+  overflow: hidden;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  background: #f6f8fa;
+  background-image: url('/img/Gemini_Generated_Image_x04kj4x04kj4x04k.png');
+  background-size: cover;
+  background-repeat: no-repeat;
+  background-position: center;
+}
+
+.paw-bg {
+  position: absolute;
+  inset: 0;
+  width: 100vw;
+  height: 100vh;
+  pointer-events: none;
+  z-index: 0;
+}
+
+.paw-print {
+  position: absolute;
+  width: 54px;
+  height: 54px;
+  opacity: 0.15;
+  filter: blur(0.5px);
+  transition: opacity 0.3s;
+}
+
+.home-content {
+  position: relative;
+  z-index: 2;
+  background: rgba(255,255,255,0.92);
+  border-radius: 24px;
+  box-shadow: 0 6px 32px rgba(0,0,0,0.10);
+  padding: 3rem 2.5rem 2.5rem 2.5rem;
+  max-width: 420px;
+  text-align: center;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+}
+
+.home-content h1 {
+  font-size: 2.3rem;
+  font-weight: 700;
+  color: #007BFF;
+  margin-bottom: 0.7rem;
+  letter-spacing: 0.5px;
+  text-shadow: 2px 2px 8px rgba(0,0,0,0.18), 0 1px 0 #fff;
+}
+
+.subtitle {
+  font-size: 1.15rem;
+  color: #444;
+  margin-bottom: 2.2rem;
+}
+
+.home-actions {
+  display: flex;
+  gap: 1.2rem;
+  margin-top: 1rem;
+  width: 100%;
+  justify-content: center;
+}
+
+.home-btn {
+  background: linear-gradient(90deg, #007BFF 60%, #00C6FB 100%);
+  color: #fff;
+  font-size: 1.08rem;
+  font-weight: 600;
+  padding: 0.85rem 1.7rem;
+  border-radius: 8px;
+  box-shadow: 0 2px 8px rgba(0,123,255,0.08);
+  transition: background 0.2s, transform 0.2s;
+  outline: none;
+}
+
+.home-btn:hover {
+  background: linear-gradient(90deg, #005bb5 60%, #00a6d6 100%);
+  transform: translateY(-2px) scale(1.04);
+}
+
+/* Estilo para o botão 'Voltar para Login' */
+.home-btn:last-child {
+  margin-top: 1.5rem;
+  background: linear-gradient(90deg, #6c757d 60%, #adb5bd 100%);
+}
+
+.home-btn:last-child:hover {
+  background: linear-gradient(90deg, #5a6268 60%, #9ca3a9 100%);
+}
+
+.home-navbar {
+  position: fixed;
+  top: 0;
+  left: 0;
+  width: 100vw;
+  height: 64px;
+  background: linear-gradient(90deg, #007BFF 60%, #00C6FB 100%);
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  padding: 0 2.5rem;
+  z-index: 10;
+  box-shadow: 0 2px 8px rgba(0,123,255,0.08);
+}
+
+.home-navbar .nav-btn-group {
+  display: flex;
+  align-items: center;
+}
+
+.home-navbar .home-nav-btn {
+  background: transparent;
+  color: #fff;
+  font-size: 1.08rem;
+  font-weight: 600;
+  border: none;
+  border-radius: 6px;
+  padding: 0.7rem 1.3rem;
+  margin-left: 1.1rem;
+  cursor: pointer;
+  transition: background 0.2s, color 0.2s, transform 0.2s;
+}
+
+.home-navbar .home-nav-btn:hover {
+  background: rgba(255,255,255,0.13);
+  color: #e0e0e0;
+  transform: translateY(-2px) scale(1.04);
+}
+
+.home-nav-icon {
+  background: transparent;
+  border: none;
+  margin-right: 0;
+  margin-left: 0;
+  cursor: pointer;
+  display: flex;
+  align-items: center;
+  padding: 0.3rem 0.3rem 0.3rem 0;
+  transition: background 0.2s;
+}
+
+.home-nav-icon:hover {
+  background: rgba(255,255,255,0.13);
+  border-radius: 6px;
+}
+
+.cadastre-agora-btn {
+  background: linear-gradient(90deg, #007BFF 60%, #00C6FB 100%);
+  color: #fff;
+  font-size: 1.08rem;
+  font-weight: 600;
+  padding: 0.85rem 1.7rem;
+  border-radius: 8px;
+  box-shadow: 0 2px 8px rgba(0,123,255,0.08);
+  transition: background 0.2s, transform 0.2s;
+  outline: none;
+  border: none;
+  margin-top: 0.5rem;
+  cursor: pointer;
+}
+
+.cadastre-agora-btn:hover {
+  background: linear-gradient(90deg, #005bb5 60%, #00a6d6 100%);
+  transform: translateY(-2px) scale(1.04);
+}
+
+@media (max-width: 600px) {
+  .home-content {
+    padding: 2rem 1rem 1.5rem 1rem;
+    max-width: 98vw;
+  }
+  .home-actions {
+    flex-direction: column;
+    gap: 0.8rem;
+  }
+  .home-btn {
+    width: 100%;
+  }
+  .home-navbar {
+    padding: 0 0.5rem;
+    height: 54px;
+  }
+  .home-navbar .home-nav-btn {
+    font-size: 0.98rem;
+    padding: 0.5rem 0.7rem;
+    margin-left: 0.5rem;
+  }
+} 

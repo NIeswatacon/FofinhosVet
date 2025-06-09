@@ -1,0 +1,145 @@
+.cadastro-paga-container {
+  min-height: 100vh;
+  display: flex;
+  justify-content: center;
+  align-items: center;
+  background: #f5f5f5;
+  position: relative;
+  overflow: hidden;
+}
+
+.cadastro-bg-paws {
+  position: absolute;
+  inset: 0;
+  width: 100vw;
+  height: 100vh;
+  pointer-events: none;
+  z-index: 1;
+}
+
+.cadastro-paga-form {
+  background: white;
+  padding: 2rem;
+  border-radius: 8px;
+  box-shadow: 0 2px 10px rgba(0, 0, 0, 0.1);
+  width: 100%;
+  max-width: 500px;
+  position: relative;
+  z-index: 1;
+}
+
+.cadastro-paga-form h2 {
+  text-align: center;
+  color: #333;
+  margin-bottom: 2rem;
+}
+
+.form-group {
+  margin-bottom: 1.5rem;
+}
+
+.form-group label {
+  display: block;
+  margin-bottom: 0.5rem;
+  color: #555;
+  font-weight: 500;
+}
+
+.form-group input {
+  width: 100%;
+  padding: 0.75rem;
+  border: 1px solid #ddd;
+  border-radius: 4px;
+  font-size: 1rem;
+}
+
+.form-group input:focus {
+  outline: none;
+  border-color: #007BFF;
+  box-shadow: 0 0 0 2px rgba(0, 123, 255, 0.25);
+}
+
+.password-input-wrapper {
+  position: relative;
+}
+
+.toggle-password {
+  position: absolute;
+  right: 10px;
+  top: 50%;
+  transform: translateY(-50%);
+  cursor: pointer;
+  user-select: none;
+  color: #666;
+}
+
+.botoes-cadastro-row {
+  display: flex;
+  gap: 1rem;
+  margin-top: 2rem;
+}
+
+.cadastro-btn,
+.voltar-login-btn {
+  flex: 1;
+  padding: 0.75rem;
+  border: none;
+  border-radius: 4px;
+  font-size: 1rem;
+  cursor: pointer;
+  transition: background-color 0.2s;
+}
+
+.cadastro-btn {
+  background-color: #007BFF;
+  color: white;
+}
+
+.cadastro-btn:hover {
+  background-color: #0056b3;
+}
+
+.voltar-login-btn {
+  background-color: #6c757d;
+  color: white;
+}
+
+.voltar-login-btn:hover {
+  background-color: #5a6268;
+}
+
+.error-message {
+  background-color: #fff3f3;
+  color: #dc3545;
+  padding: 1rem;
+  border-radius: 4px;
+  margin-bottom: 1rem;
+  text-align: center;
+  border: 1px solid #ffcdd2;
+  font-size: 0.9rem;
+}
+
+.success-message {
+  background-color: #d4edda;
+  color: #155724;
+  padding: 1rem;
+  border-radius: 4px;
+  margin-top: 1rem;
+  text-align: center;
+  border: 1px solid #c3e6cb;
+}
+
+.success-message p {
+  margin: 0.5rem 0;
+}
+
+@media (max-width: 600px) {
+  .cadastro-paga-form {
+    margin: 1rem;
+    padding: 1.5rem;
+  }
+
+  .botoes-cadastro-row {
+    flex-direction: column;
+  }
+} 

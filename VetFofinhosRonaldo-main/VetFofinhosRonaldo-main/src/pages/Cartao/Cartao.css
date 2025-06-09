@@ -1,0 +1,293 @@
+.cartao-container {
+  max-width: 900px;
+  margin: 2rem auto;
+  padding: 2rem;
+  background: #fff;
+  border-radius: 16px;
+  box-shadow: 0 4px 24px rgba(0,0,0,0.08);
+  font-family: 'Open Sans', sans-serif;
+}
+
+header {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  margin-bottom: 2rem;
+}
+header h2 {
+  color: #007bff;
+  font-size: 2.2rem;
+  margin-bottom: 0.5rem;
+}
+.tabs {
+  display: flex;
+  gap: 1rem;
+}
+.tabs button {
+  background: #f8f9fa;
+  border: none;
+  border-radius: 8px 8px 0 0;
+  padding: 0.7rem 2rem;
+  font-weight: 600;
+  color: #007bff;
+  cursor: pointer;
+  transition: background 0.2s, color 0.2s;
+}
+.tabs button.active {
+  background: #007bff;
+  color: #fff;
+}
+
+.cartoes-lista {
+  margin-bottom: 2rem;
+}
+.cards-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(270px, 1fr));
+  gap: 1.5rem;
+}
+.card-item {
+  background: linear-gradient(135deg, #007bff 60%, #6c757d 100%);
+  color: #fff;
+  border-radius: 16px;
+  box-shadow: 0 2px 12px rgba(0,0,0,0.10);
+  padding: 1.5rem 1.2rem;
+  position: relative;
+  transition: transform 0.2s, box-shadow 0.2s;
+  min-height: 170px;
+  display: flex;
+  flex-direction: column;
+  justify-content: space-between;
+  animation: fadeIn 0.5s;
+}
+.card-item.debito {
+  background: linear-gradient(135deg, #28a745 60%, #007bff 100%);
+}
+.card-item:hover {
+  transform: translateY(-6px) scale(1.03);
+  box-shadow: 0 8px 32px rgba(0,0,0,0.18);
+}
+.card-flag {
+  display: flex;
+  align-items: center;
+  gap: 0.7rem;
+  margin-bottom: 0.7rem;
+}
+.flag {
+  width: 32px;
+  height: 20px;
+  background: #fff3;
+  border-radius: 4px;
+  display: inline-block;
+}
+.flag-visa { background: url('https://img.icons8.com/color/48/000000/visa.png') center/cover no-repeat; }
+.flag-mastercard { background: url('https://img.icons8.com/color/48/000000/mastercard-logo.png') center/cover no-repeat; }
+.flag-amex { background: url('https://img.icons8.com/color/48/000000/amex.png') center/cover no-repeat; }
+.flag-elo { background: url('https://img.icons8.com/color/48/000000/elo.png') center/cover no-repeat; }
+.flag-default { background: #fff3; }
+.card-type {
+  font-size: 1rem;
+  font-weight: 700;
+  text-transform: uppercase;
+  letter-spacing: 1px;
+}
+.card-number {
+  font-size: 1.3rem;
+  letter-spacing: 2px;
+  margin-bottom: 0.7rem;
+}
+.card-details {
+  display: flex;
+  justify-content: space-between;
+  font-size: 1rem;
+  font-weight: 500;
+}
+.remove-btn {
+  position: absolute;
+  top: 12px;
+  right: 12px;
+  background: #dc3545;
+  color: #fff;
+  border: none;
+  border-radius: 50%;
+  width: 32px;
+  height: 32px;
+  font-size: 1.2rem;
+  cursor: pointer;
+  box-shadow: 0 2px 8px #0002;
+  transition: background 0.2s;
+  z-index: 2;
+}
+.remove-btn:hover {
+  background: #b52a37;
+}
+.card-item.removing {
+  opacity: 0.5;
+  pointer-events: none;
+}
+.loading {
+  text-align: center;
+  color: #007bff;
+  font-weight: 600;
+  padding: 2rem 0;
+}
+.empty {
+  text-align: center;
+  color: #6c757d;
+  font-size: 1.1rem;
+  padding: 2rem 0;
+}
+
+.cartao-form-section {
+  margin-top: 2rem;
+  background: #f8f9fa;
+  border-radius: 12px;
+  padding: 2rem 1.5rem;
+  box-shadow: 0 2px 8px #0001;
+}
+.cartao-form-section h3 {
+  color: #007bff;
+  margin-bottom: 1.2rem;
+  font-size: 1.3rem;
+}
+.cartao-form {
+  display: flex;
+  flex-direction: column;
+  gap: 1.2rem;
+}
+.form-row {
+  display: flex;
+  gap: 1rem;
+}
+.form-row input, .form-row select {
+  flex: 1;
+  padding: 0.8rem;
+  border: 1.5px solid #ddd;
+  border-radius: 8px;
+  font-size: 1rem;
+  transition: border-color 0.2s;
+}
+.form-row input:focus, .form-row select:focus {
+  border-color: #007bff;
+  outline: none;
+}
+.form-row input.invalid {
+  border-color: #dc3545;
+  background: #fff0f0;
+}
+.add-btn {
+  background: #007bff;
+  color: #fff;
+  border: none;
+  border-radius: 8px;
+  padding: 1rem;
+  font-weight: 700;
+  font-size: 1.1rem;
+  cursor: pointer;
+  transition: background 0.2s, transform 0.2s;
+  margin-top: 0.5rem;
+}
+.add-btn:hover {
+  background: #0056b3;
+  transform: scale(1.03);
+}
+.form-error {
+  color: #dc3545;
+  background: #fff0f0;
+  border-radius: 6px;
+  padding: 0.7rem 1rem;
+  margin-bottom: 0.5rem;
+  animation: fadeIn 0.3s;
+}
+.form-success {
+  color: #28a745;
+  background: #eafaf1;
+  border-radius: 6px;
+  padding: 0.7rem 1rem;
+  margin-bottom: 0.5rem;
+  animation: fadeIn 0.3s;
+}
+.card-preview {
+  width: 340px;
+  max-width: 100%;
+  height: 180px;
+  border-radius: 16px;
+  margin: 1.2rem auto 1.5rem auto;
+  box-shadow: 0 4px 24px rgba(0,0,0,0.13);
+  color: #fff;
+  display: flex;
+  flex-direction: column;
+  justify-content: space-between;
+  padding: 1.5rem 1.2rem;
+  font-size: 1.1rem;
+  transition: background 0.3s;
+  animation: fadeIn 0.5s;
+}
+.card-preview .card-flag {
+  margin-bottom: 0.7rem;
+}
+.card-preview .card-number {
+  font-size: 1.3rem;
+  letter-spacing: 2px;
+  margin-bottom: 0.7rem;
+}
+.card-preview .card-details {
+  display: flex;
+  justify-content: space-between;
+  font-size: 1rem;
+  font-weight: 500;
+}
+@media (max-width: 900px) {
+  .cartao-container {
+    padding: 1rem;
+  }
+  .cards-grid {
+    grid-template-columns: 1fr 1fr;
+  }
+}
+@media (max-width: 600px) {
+  .cards-grid {
+    grid-template-columns: 1fr;
+  }
+  .card-preview {
+    width: 100%;
+    min-width: 0;
+    font-size: 1rem;
+  }
+  .cartao-form-section {
+    padding: 1rem 0.5rem;
+  }
+}
+@keyframes fadeIn {
+  from { opacity: 0; transform: translateY(10px); }
+  to { opacity: 1; transform: translateY(0); }
+}
+
+.form-actions {
+  justify-content: flex-end;
+  gap: 1rem;
+}
+
+.voltar-btn {
+  background: #007bff;
+  color: #fff;
+  border: none;
+  border-radius: 8px;
+  padding: 1rem;
+  font-weight: 700;
+  font-size: 1.1rem;
+  cursor: pointer;
+  transition: background 0.2s, transform 0.2s;
+  margin-top: 0.5rem;
+  flex: 1;
+}
+
+.voltar-btn:hover {
+  background: #0056b3;
+  transform: scale(1.03);
+}
+
+.form-actions .add-btn, .form-actions .voltar-btn {
+  flex: 1;
+  min-width: 0;
+} 

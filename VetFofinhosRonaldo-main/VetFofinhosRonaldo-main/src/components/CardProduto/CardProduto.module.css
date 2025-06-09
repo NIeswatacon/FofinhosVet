@@ -1,0 +1,137 @@
+:root {
+  --primary-color: #007bff;
+  --primary-hover: #0056b3;
+  --background-light: #f9f9f9;
+  --card-shadow: rgba(0, 0, 0, 0.06);
+  --text-color: #333;
+  --muted-text: #888;
+  --tooltip-bg: #222;
+}
+
+.card {
+    margin: 10px;
+    width: 220px;
+    background-color: #fff;
+    border-radius: 12px;
+    box-shadow: 0 2px 8px var(--card-shadow);
+    padding: 16px;
+    overflow: visible;
+    position: relative;
+    display: flex;
+    flex-direction: column;
+    justify-content: space-between;
+    gap: 12px; /* Melhor espaçamento interno entre os elementos */
+    transition: transform 0.2s ease, box-shadow 0.3s ease;
+}
+
+.card:hover {
+    transform: translateY(-4px);
+    box-shadow: 0 6px 12px rgba(0, 0, 0, 0.1);
+}
+
+.image_area {
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    background-color: var(--background-light);
+    border-radius: 10px;
+    position: relative;
+    overflow: visible;
+    height: 150px; /* Levemente ajustado */
+}
+
+.image {
+    width: 100%;
+    height: 100%;
+    object-fit: contain;
+}
+
+.productInfo {
+    text-align: center;
+    display: flex;
+    flex-direction: column;
+    gap: 4px;
+}
+
+.productInfo h3 {
+    font-size: 1rem;
+    font-weight: 500;
+    color: var(--text-color);
+    margin: 0;
+    line-height: 1.3;
+}
+
+.productInfo p {
+    font-size: 0.85rem;
+    color: var(--muted-text);
+    margin: 0;
+}
+
+.description {
+    font-size: 0.7em;
+    color: #555;
+    margin-top: 5px;
+    text-align: center;
+    /* Estilo para a descrição, se usada diretamente */
+    flex-grow: 1;
+}
+
+.infoIconContainer {
+    position: absolute;
+    top: 10px;
+    right: 10px;
+    cursor: help;
+    z-index: 10;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    color: var(--muted-text);
+    transition: color 0.3s;
+}
+
+.infoIconContainer:hover {
+    color: var(--primary-color);
+}
+
+.tooltipText {
+    visibility: hidden;
+    max-width: 200px;
+    background-color: var(--tooltip-bg);
+    color: #fff;
+    text-align: center;
+    border-radius: 6px;
+    padding: 8px 12px;
+    position: absolute;
+    z-index: 9999;
+    bottom: 125%;
+    left: 50%;
+    transform: translateX(-50%);
+    opacity: 0;
+    transition: opacity 0.3s ease;
+    font-size: 0.75rem;
+    box-shadow: 0 2px 6px rgba(0, 0, 0, 0.15);
+    white-space: normal;
+    word-wrap: break-word;
+}
+
+.infoIconContainer:hover .tooltipText {
+    visibility: visible;
+    opacity: 1;
+}
+.addToCartButton {
+    background-color: var(--primary-color);
+    color: white;
+    border: none;
+    padding: 8px 12px; /* 👈 Reduzido */
+    border-radius: 5px;
+    cursor: pointer;
+    font-size: 0.85rem; /* 👈 Menor */
+    font-weight: 500;
+    transition: background-color 0.3s ease;
+    width: 100%;
+    align-self: center;
+}
+
+.addToCartButton:hover {
+    background-color: var(--primary-hover);
+}

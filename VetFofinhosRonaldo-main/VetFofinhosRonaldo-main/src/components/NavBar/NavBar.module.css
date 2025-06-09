@@ -1,0 +1,58 @@
+.navbar {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  background-color: #007BFF; /* Cor primária azul */
+  padding: 0.8rem 2rem; /* Aumenta um pouco o padding vertical */
+  color: white;
+  position: fixed;
+  top: 0;
+  left: 0;
+  width: 100%;
+  box-sizing: border-box;
+  z-index: 1000;
+  box-shadow: 0 2px 4px rgba(0, 0, 0, 0.1); /* Sombra sutil */
+}
+
+.logo a {
+  color: white;
+  text-decoration: none;
+  font-size: 1.8rem; /* Aumenta um pouco o tamanho da fonte do logo */
+  font-weight: bold;
+  transition: color 0.3s ease; /* Transição suave para hover */
+}
+
+.logo a:hover {
+  color: #e0e0e0; /* Cor mais clara no hover do logo */
+}
+
+.navLinks {
+  list-style: none;
+  display: flex;
+  margin: 0;
+  padding: 0;
+}
+
+.navLinks li {
+  margin-left: 25px; /* Aumenta um pouco o espaçamento entre os links */
+}
+
+.navLinks a {
+  color: white;
+  text-decoration: none;
+  font-size: 1.1rem; /* Aumenta um pouco o tamanho da fonte dos links */
+  padding: 0.5rem 0.8rem; /* Adiciona padding para melhor área de clique */
+  border-radius: 4px; /* Bordas levemente arredondadas */
+  transition: background-color 0.3s ease, color 0.3s ease; /* Transições suaves */
+}
+
+.navLinks a:hover {
+  background-color: rgba(255, 255, 255, 0.1); /* Fundo sutil no hover */
+  color: #f0f0f0; /* Cor do texto mais clara no hover */
+}
+
+.navLinks a.activeLink {
+  background-color: rgba(255, 255, 255, 0.2); /* Fundo mais destacado para link ativo */
+  font-weight: bold; /* Texto em negrito para link ativo */
+  color: #ffffff;
+}

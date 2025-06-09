@@ -1,0 +1,494 @@
+import React, { useState, useEffect } from 'react';
+import { useNavigate } from 'react-router-dom';
+import { QRCodeSVG } from 'qrcode.react';
+import { pagamentoService, FormaPagamento, PagamentoError } from '../../services/pagamentoService';
+import type { Pagamento } from '../../services/pagamentoService';
+import { cartaoService, TipoCartao, CartaoError, type Cartao } from '../../services/cartaoService'; // Importar o tipo Cartao
+import './Pagamento.css';
+
+// Enums correspondentes ao backend
+enum StatusPagamento {
+  PENDENTE = 'PENDENTE',
+  APROVADO = 'APROVADO',
+  REJEITADO = 'REJEITADO',
+  CANCELADO = 'CANCELADO'
+}
+
+interface PaymentFormData {
+  valor: string;
+  formaPagamento: FormaPagamento;
+  idUsuario?: number; // Adicionado para corrigir erro TS2339
+  idPedido?: number;  // Adicionado para corrigir erro TS2339
+  numeroCartao?: string;
+  nomeTitular?: string;
+  dataValidade?: string;
+  cvv?: string;
+  tipoCartao?: string;
+  cpfCliente: string;
+}
+
+
+const PagamentoComponent: React.FC = () => {
+  console.log("Renderizando PagamentoComponent");
+  const navigate = useNavigate();
+  const [formData, setFormData] = useState<PaymentFormData>({
+    valor: '',
+    formaPagamento: FormaPagamento.CARTAO,
+    tipoCartao: 'CREDITO', // Valor inicial para tipoCartao
+    cpfCliente: '',
+    // idUsuario e idPedido podem ser inicializados se necessário, ou deixados como undefined
+  });
+  const [isLoading, setIsLoading] = useState(false);
+  const [error, setError] = useState<string | null>(null);
+  const [success, setSuccess] = useState(false);
+  const [pixKey, setPixKey] = useState<string | null>(null);
+  const [cartoesSalvos, setCartoesSalvos] = useState<Cartao[]>([]);
+  const [loadingCartoes, setLoadingCartoes] = useState(false);
+  const [erroCartoes, setErroCartoes] = useState<string | null>(null);
+  const [selectedCardId, setSelectedCardId] = useState<number | null>(null);
+
+  const handleCardSelect = (cartao: Cartao) => {
+    setSelectedCardId(cartao.id ?? null); // Se cartao.id for undefined, usa null
+    setFormData(prev => ({
+      ...prev,
+      numeroCartao: formatCardNumber(cartao.numeroCartao),
+      nomeTitular: cartao.nomeTitular,
+      dataValidade: formatDate(cartao.dataValidade),
+      tipoCartao: cartao.tipoCartao,
+      formaPagamento: FormaPagamento.CARTAO,
+      // cpfCliente: cartao.cpfTitular // Considere preencher o CPF se o cartão salvo tiver essa info
+    }));
+  };
+
+  useEffect(() => {
+    async function fetchCartoesSalvos() {
+      setLoadingCartoes(true);
+      setErroCartoes(null);
+      try {
+        // Supondo que idUsuario seja necessário para listar cartões e esteja disponível
+        // Se não, ajuste a chamada do serviço
+        // const idUsuarioLogado = 1; // Exemplo: obter de um contexto de autenticação
+        // const lista = await cartaoService.listarCartoesPorUsuario(idUsuarioLogado);
+        const lista = await cartaoService.listarCartoes(); // Se listarCartoes não precisar de idUsuario
+        setCartoesSalvos(lista);
+      } catch (e) {
+        if (e instanceof CartaoError) {
+          setErroCartoes(e.message);
+        } else {
+          setErroCartoes('Erro ao carregar cartões salvos.');
+        }
+        console.error("Erro ao buscar cartões:", e);
+      } finally {
+        setLoadingCartoes(false);
+      }
+    }
+    fetchCartoesSalvos();
+  }, []);
+
+  // Formatação de valores
+  const formatCurrency = (value: string) => {
+    if (!value) return '';
+    const number = value.replace(/\D/g, '');
+    return (Number(number) / 100).toLocaleString('pt-BR', {
+      style: 'currency',
+      currency: 'BRL'
+    });
+  };
+
+  const formatCardNumber = (value: string) => {
+    if (!value) return '';
+    return value.replace(/\D/g, '').replace(/(\d{4})/g, '$1 ').trim();
+  };
+
+  const formatDate = (value: string) => {
+    if (!value) return '';
+    return value.replace(/\D/g, '').replace(/(\d{2})(\d{2})/, '$1/$2');
+  };
+
+  const formatCPF = (value: string) => {
+    if (!value) return '';
+    return value.replace(/\D/g, '')
+      .replace(/(\d{3})(\d)/, '$1.$2')
+      .replace(/(\d{3})(\d)/, '$1.$2')
+      .replace(/(\d{3})(\d{1,2})$/, '$1-$2');
+  };
+
+  // Validações
+  const validateForm = () => {
+    if (!formData.valor || Number(formData.valor.replace(/\D/g, '')) <= 0) {
+      setError('Valor inválido. Por favor, insira um valor para o pagamento.');
+      return false;
+    }
+
+    if (formData.formaPagamento === FormaPagamento.CARTAO) {
+      if (!formData.numeroCartao || formData.numeroCartao.replace(/\D/g, '').length !== 16) {
+        setError('Número do cartão inválido. Deve conter 16 dígitos.');
+        return false;
+      }
+      if (!formData.nomeTitular?.trim()) {
+        setError('Nome do titular é obrigatório.');
+        return false;
+      }
+      if (!formData.dataValidade || formData.dataValidade.replace(/\D/g, '').length !== 4) {
+        setError('Data de validade inválida. Use o formato MM/AA.');
+        return false;
+      }
+      if (!formData.cvv || formData.cvv.replace(/\D/g, '').length < 3 || formData.cvv.replace(/\D/g, '').length > 4) {
+        setError('CVV inválido. Deve conter 3 ou 4 dígitos.');
+        return false;
+      }
+    }
+
+    if (!formData.cpfCliente || formData.cpfCliente.replace(/\D/g, '').length !== 11) {
+      setError('CPF do cliente inválido. Deve conter 11 dígitos.');
+      return false;
+    }
+    // Adicionar validação para idUsuario e idPedido se forem obrigatórios
+    // if (formData.idUsuario === undefined || formData.idUsuario <=0) {
+    //   setError('ID do usuário inválido.');
+    //   return false;
+    // }
+    // if (formData.idPedido === undefined || formData.idPedido <=0) {
+    //   setError('ID do pedido inválido.');
+    //   return false;
+    // }
+
+    setError(null); // Limpa erros anteriores se a validação passar
+    return true;
+  };
+
+  const handleInputChange = (e: React.ChangeEvent<HTMLInputElement | HTMLSelectElement>) => {
+    const { name, value } = e.target;
+    let processedValue = value;
+
+    if (name === 'valor') {
+      processedValue = value.replace(/\D/g, ''); // Apenas números para o valor
+    } else if (name === 'numeroCartao') {
+      processedValue = formatCardNumber(value);
+    } else if (name === 'dataValidade') {
+      processedValue = formatDate(value);
+    } else if (name === 'cvv') {
+      processedValue = value.replace(/\D/g, '').slice(0, 4); // CVV pode ter até 4 dígitos (Amex)
+    } else if (name === 'cpfCliente') {
+      processedValue = formatCPF(value);
+    }
+
+    setFormData(prev => ({
+      ...prev,
+      [name]: processedValue
+    }));
+  };
+
+  const handlePaymentMethodChange = (method: FormaPagamento) => {
+    setFormData(prev => ({
+      ...prev,
+      formaPagamento: method,
+      // Limpar dados do cartão se mudar para PIX e vice-versa, se desejado
+      numeroCartao: method === FormaPagamento.PIX ? '' : prev.numeroCartao,
+      nomeTitular: method === FormaPagamento.PIX ? '' : prev.nomeTitular,
+      dataValidade: method === FormaPagamento.PIX ? '' : prev.dataValidade,
+      cvv: method === FormaPagamento.PIX ? '' : prev.cvv,
+    }));
+    setError(null); // Limpar erros ao mudar forma de pagamento
+  };
+
+  const handleSubmit = async (e: React.FormEvent) => {
+    e.preventDefault();
+    setError(null);
+
+    // Simular idUsuario e idPedido - Em um app real, viriam do estado global/contexto/props
+    const idUsuarioSimulado = 1; // Substituir pela lógica real
+    const idPedidoSimulado = Math.floor(Math.random() * 1000) + 1; // Substituir pela lógica real
+
+    const currentFormData = {
+      ...formData,
+      idUsuario: idUsuarioSimulado,
+      idPedido: idPedidoSimulado,
+    };
+
+    if (!validateForm()) { // Passar currentFormData se a validação depender de idUsuario/idPedido
+      return;
+    }
+
+    setIsLoading(true);
+
+    try {
+      // Criar cartão apenas se for um novo cartão e a forma de pagamento for CARTAO
+      // Se selectedCardId for null, significa que é um novo cartão
+      if (currentFormData.formaPagamento === FormaPagamento.CARTAO && !selectedCardId) {
+        const cartaoData = {
+          numeroCartao: currentFormData.numeroCartao!.replace(/\D/g, ''),
+          nomeTitular: currentFormData.nomeTitular!,
+          dataValidade: currentFormData.dataValidade!.replace('/', ''), // Formato MMYY
+          cvv: currentFormData.cvv!,
+          tipoCartao: currentFormData.tipoCartao === 'DEBITO' ? TipoCartao.DEBITO : TipoCartao.CREDITO,
+          cpfTitular: currentFormData.cpfCliente.replace(/\D/g, ''), // Usar cpfCliente como cpfTitular
+          idUsuario: currentFormData.idUsuario! // Garantir que idUsuario está presente
+        };
+        await cartaoService.criarCartao(cartaoData);
+        // Idealmente, após criar o cartão, você pode querer recarregar a lista de cartões salvos
+        // ou adicionar o novo cartão à lista localmente.
+      }
+
+      const pagamentoData: Pagamento = {
+        valor: Number(currentFormData.valor.replace(/\D/g, '')), // Valor em centavos ou reais, dependendo do backend
+        formaPagamento: currentFormData.formaPagamento,
+        status: StatusPagamento.PENDENTE, // O backend deve definir o status inicial
+        idPedido: currentFormData.idPedido!,
+        // nomeCliente e cpfCliente podem ser opcionais no payload se o backend os obtém via idUsuario
+        nomeCliente: currentFormData.formaPagamento === FormaPagamento.CARTAO ? currentFormData.nomeTitular! : 'Cliente PIX/Boleto',
+        cpfCliente: currentFormData.cpfCliente.replace(/\D/g, ''),
+        idUsuario: currentFormData.idUsuario!,
+        // Se o pagamento for com cartão salvo, você pode querer enviar o ID do cartão
+        // idCartaoSalvo: selectedCardId ?? undefined,
+      };
+
+      const response = await pagamentoService.criarPagamento(pagamentoData);
+      setSuccess(true);
+      if (currentFormData.formaPagamento === FormaPagamento.PIX && response.chavePix) {
+        setPixKey(response.chavePix);
+      } else if (currentFormData.formaPagamento === FormaPagamento.CARTAO) {
+        // Lógica para pagamento com cartão aprovado/rejeitado, se o backend retornar isso imediatamente
+        console.log("Pagamento com cartão enviado:", response);
+      }
+    } catch (err) {
+      if (err instanceof PagamentoError || err instanceof CartaoError) {
+        setError(err.message);
+      } else if (axios.isAxiosError(err) && err.response) {
+        setError(err.response.data?.message || 'Erro ao processar pagamento.');
+      } else {
+        setError('Ocorreu um erro inesperado ao processar o pagamento.');
+      }
+      console.error("Erro no handleSubmit:", err);
+    } finally {
+      setIsLoading(false);
+    }
+  };
+
+  // Se o valor do pagamento vier de outro lugar (ex: carrinho), você pode recebê-lo via props ou estado global
+  // e definir no useEffect. Exemplo:
+  // useEffect(() => {
+  //   const valorDoCarrinho = 10050; // R$ 100,50 em centavos
+  //   setFormData(prev => ({ ...prev, valor: valorDoCarrinho.toString() }));
+  // }, []);
+
+  return (
+    <div className="payment-container">
+      <h2>Pagamento</h2>
+      <div className="cartoes-salvos-section">
+        <h3>Cartões Salvos</h3>
+        {loadingCartoes && <div className="loading">Carregando cartões...</div>}
+        {erroCartoes && <div className="error-message">{erroCartoes}</div>}
+        {!loadingCartoes && !erroCartoes && cartoesSalvos.length === 0 && (
+          <div className="empty">Nenhum cartão salvo.</div>
+        )}
+        {!loadingCartoes && !erroCartoes && cartoesSalvos.length > 0 && (
+          <div className="cartoes-grid">
+            {cartoesSalvos.map(cartao => (
+              <div 
+                className={`cartao-salvo-item ${selectedCardId === cartao.id ? 'selected' : ''}`}
+                key={cartao.id}
+                onClick={() => handleCardSelect(cartao)}
+                role="button" // Adicionar role para acessibilidade
+                tabIndex={0}  // Adicionar tabIndex para acessibilidade
+                onKeyPress={(e) => e.key === 'Enter' && handleCardSelect(cartao)} // Adicionar evento de teclado
+                style={{ cursor: 'pointer', border: '1px solid #ccc', padding: '10px', margin: '5px', borderRadius: '5px' }}
+              >
+                <div className="cartao-numero">•••• •••• •••• {cartao.numeroCartao.slice(-4)}</div>
+                <div className="cartao-nome">{cartao.nomeTitular}</div>
+                <div className="cartao-tipo">{cartao.tipoCartao}</div>
+              </div>
+            ))}
+          </div>
+        )}
+      </div>
+      
+      {error && (
+        <div className="error-message" role="alert"> {/* Adicionar role para acessibilidade */}
+          {error}
+        </div>
+      )}
+
+      {success ? (
+        <div className="success-message">
+          <h2>Pagamento Processado com Sucesso!</h2>
+          <p>Seu pagamento foi recebido e está sendo processado.</p>
+          {pixKey && (
+            <div className="qr-code-container">
+              <QRCodeSVG value={pixKey} size={200} />
+              <p>Escaneie o QR Code para pagar via PIX</p>
+              <p><strong>Chave PIX:</strong> {pixKey}</p> {/* Mostrar a chave PIX também */}
+            </div>
+          )}
+          <button
+            type="button" // Adicionar type="button"
+            className="payment-button"
+            onClick={() => navigate('/agendamentos')} // Ajustar rota se necessário
+          >
+            Voltar para Agendamentos
+          </button>
+        </div>
+      ) : (
+        <form onSubmit={handleSubmit} className="payment-form">
+          <div className="form-group"> {/* Mover valor para dentro do form */}
+            <label htmlFor="valor">Valor Total</label>
+            <input
+              type="text"
+              id="valor"
+              name="valor"
+              value={formatCurrency(formData.valor)} // Mostrar valor formatado
+              onChange={handleInputChange}
+              placeholder="R$ 0,00"
+              required
+            />
+          </div>
+
+          <div className="payment-methods">
+            <h3>Forma de Pagamento</h3>
+            <div className="payment-method-buttons">
+              <button
+                type="button"
+                className={`payment-method-button ${formData.formaPagamento === FormaPagamento.CARTAO ? 'active' : ''}`}
+                onClick={() => handlePaymentMethodChange(FormaPagamento.CARTAO)}
+              >
+                Cartão ({formData.tipoCartao === 'DEBITO' ? 'Débito' : 'Crédito'})
+              </button>
+              <button
+                type="button"
+                className={`payment-method-button ${formData.formaPagamento === FormaPagamento.PIX ? 'active' : ''}`}
+                onClick={() => handlePaymentMethodChange(FormaPagamento.PIX)}
+              >
+                PIX
+              </button>
+            </div>
+          </div>
+
+          {formData.formaPagamento === FormaPagamento.CARTAO && ( // Remover a condição extra de tipoCartao aqui
+            <>
+              <div className="form-group">
+                <label htmlFor="numeroCartao">Número do Cartão</label>
+                <input
+                  type="text"
+                  id="numeroCartao"
+                  name="numeroCartao"
+                  value={formData.numeroCartao ?? ''} 
+                  onChange={handleInputChange}
+                  placeholder="0000 0000 0000 0000"
+                  maxLength={19} // 16 dígitos + 3 espaços
+                  required={formData.formaPagamento === FormaPagamento.CARTAO}
+                />
+              </div>
+
+              <div className="form-row">
+                <div className="form-group">
+                  <label htmlFor="dataValidade">Data de Validade</label>
+                  <input
+                    type="text"
+                    id="dataValidade"
+                    name="dataValidade"
+                    value={formData.dataValidade ?? ''}
+                    onChange={handleInputChange}
+                    placeholder="MM/AA"
+                    maxLength={5} // MM/AA
+                    required={formData.formaPagamento === FormaPagamento.CARTAO}
+                  />
+                </div>
+
+                <div className="form-group">
+                  <label htmlFor="cvv">CVV</label>
+                  <input
+                    type="text" // Usar text para permitir formatação, mas validar como número
+                    id="cvv"
+                    name="cvv"
+                    value={formData.cvv ?? ''}
+                    onChange={handleInputChange}
+                    placeholder="123"
+                    maxLength={4} // CVV Amex tem 4 dígitos
+                    required={formData.formaPagamento === FormaPagamento.CARTAO}
+                  />
+                </div>
+              </div>
+
+              <div className="form-group">
+                <label htmlFor="nomeTitular">Nome do Titular</label>
+                <input
+                  type="text"
+                  id="nomeTitular"
+                  name="nomeTitular"
+                  value={formData.nomeTitular ?? ''}
+                  onChange={handleInputChange}
+                  placeholder="Nome como está no cartão"
+                  required={formData.formaPagamento === FormaPagamento.CARTAO}
+                />
+              </div>
+
+              <div className="form-group">
+                <label htmlFor="tipoCartao">Tipo do Cartão</label>
+                <select
+                  id="tipoCartao"
+                  name="tipoCartao"
+                  value={formData.tipoCartao ?? 'CREDITO'}
+                  onChange={handleInputChange}
+                  required={formData.formaPagamento === FormaPagamento.CARTAO}
+                >
+                  <option value="CREDITO">Crédito</option>
+                  <option value="DEBITO">Débito</option>
+                </select>
+              </div>
+            </>
+          )}
+          
+          {formData.formaPagamento === FormaPagamento.PIX && (
+            <div className="pix-payment">
+              <p>O QR Code do PIX será gerado após a confirmação do pagamento.</p>
+            </div>
+          )}
+
+          <div className="form-group">
+            <label htmlFor="cpfCliente">CPF do Cliente</label>
+            <input
+              type="text"
+              id="cpfCliente"
+              name="cpfCliente"
+              value={formData.cpfCliente}
+              onChange={handleInputChange}
+              placeholder="000.000.000-00"
+              maxLength={14} // 11 dígitos + 3 caracteres de formatação
+              required
+            />
+          </div>
+
+          <div className="button-group">
+            <button
+              type="button"
+              className="payment-button secondary"
+              onClick={() => navigate('/agendamentos')} // Ajustar rota se necessário
+            >
+              Cancelar
+            </button>
+            <button
+              type="button"
+              className="payment-button secondary"
+              onClick={() => navigate('/cartao')} // Ajustar rota para cadastro de cartão
+            >
+              Adicionar Novo Cartão
+            </button>
+            <button
+              type="submit"
+              className="payment-button"
+              disabled={isLoading}
+            >
+              {isLoading ? 'Processando...' : 'Pagar'}
+            </button>
+          </div>
+        </form>
+      )}
+    </div>
+  );
+};
+
+export default PagamentoComponent;
+
+
+// Adicionar import do Axios se não estiver global ou no serviço de pagamento
+import axios from 'axios';

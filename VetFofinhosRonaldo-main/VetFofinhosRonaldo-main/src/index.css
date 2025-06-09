@@ -1,0 +1,58 @@
+/* RESET */
+* {
+  margin: 0;
+  padding: 0;
+  box-sizing: border-box;
+  font-family: inherit;
+}
+
+/* Tamanho base da fonte e família */
+html, body, #root {
+  font-size: 16px;
+  font-weight: 400;
+  color: #222;
+  background: #f6f8fa;
+}
+
+body {
+  font-family: 'Segoe UI', Arial, sans-serif;
+}
+
+/* Links sem sublinhado */
+a {
+  text-decoration: none;
+  color: inherit;
+}
+
+/* Remover estilos nativos de lista */
+ul, ol {
+  list-style: none;
+}
+
+/* Remover estilos nativos de botões */
+button {
+  border: none;
+  background: none;
+  cursor: pointer;
+  font-family: inherit;
+}
+
+/* Inputs limpos */
+input, textarea {
+  outline: none;
+  font-family: inherit;
+}
+
+/* Scrollbar básica */
+::-webkit-scrollbar {
+  width: 8px;
+}
+
+::-webkit-scrollbar-thumb {
+  background-color: #bbb;
+  border-radius: 4px;
+}
+
+ul, ol {
+  padding-left: 0 !important;
+}
