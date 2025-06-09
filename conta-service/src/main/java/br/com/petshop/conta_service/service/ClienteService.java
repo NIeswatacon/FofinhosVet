@@ -19,10 +19,20 @@ public class ClienteService {
         this.clienteRepository = clienteRepository;
     }
 
+    // --- MÉTODO ADICIONADO PARA O LOGIN ---
+    @Transactional(readOnly = true)
+    public Cliente buscarPorEmail(String email) {
+        return clienteRepository.findByEmail(email)
+                .orElseThrow(() -> new RuntimeException("Usuário não encontrado com o email: " + email));
+    }
+
+
+    // --- MÉTODOS EXISTENTES ---
+    
     @Transactional 
     public Cliente criarCliente(Cliente cliente) {
         if (clienteRepository.findByEmail(cliente.getEmail()).isPresent()) {
-            throw new RuntimeException("Email já cadastrado."); // Crie exceções personalizadas depois
+            throw new RuntimeException("Email já cadastrado.");
         }
         if (cliente.getCpf() != null && clienteRepository.findByCpf(cliente.getCpf()).isPresent()) {
             throw new RuntimeException("CPF já cadastrado.");

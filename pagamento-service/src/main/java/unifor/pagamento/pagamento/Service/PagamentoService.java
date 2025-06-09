@@ -8,6 +8,7 @@ import org.springframework.web.reactive.function.client.WebClient;
 import reactor.core.publisher.Mono;
 import unifor.pagamento.pagamento.dto.AgendamentoResponseDTO;
 import unifor.pagamento.pagamento.dto.CarrinhoResponseDTO;
+import unifor.pagamento.pagamento.dto.ClienteDTO;
 import unifor.pagamento.pagamento.exception.PagamentoException;
 import unifor.pagamento.pagamento.model.FormaDePagamento;
 import unifor.pagamento.pagamento.model.Pagamento;
@@ -15,6 +16,7 @@ import unifor.pagamento.pagamento.model.StatusPagamento;
 import unifor.pagamento.pagamento.repository.PagamentoRepository;
 
 import java.math.BigDecimal;
+import java.time.LocalDateTime;
 import java.util.List;
 
 @Service
@@ -31,73 +33,86 @@ public class PagamentoService {
     }
 
     /**
-     * Novo método que orquestra o processo de checkout.
-     * Ele busca os débitos pendentes de outros serviços e cria um pagamento único.
+     * MÉTODO DE CHECKOUT ATUALIZADO
+     * A assinatura agora só precisa do idCliente e idUsuario, buscando os outros dados.
      */
-    public Pagamento processarCheckoutCliente(Long idCliente, Long idUsuario, String nomeCliente, String cpfCliente) {
-        BigDecimal totalVendas = BigDecimal.ZERO;
-        BigDecimal totalServicos = BigDecimal.ZERO;
+    public Pagamento processarCheckoutCliente(Long idCliente, Long idUsuario) {
+        // 1. Busca os detalhes do cliente no conta-service para obter nome e CPF.
+        logger.info("Buscando dados para o cliente ID: {}", idCliente);
+        ClienteDTO cliente = webClientBuilder.build().get()
+                .uri("http://CONTA/api/contas/clientes/{idCliente}", idCliente)
+                .retrieve()
+                .bodyToMono(ClienteDTO.class)
+                .block();
 
-        // 1. Busca o total do carrinho de compras no 'vendas-service'
+        if (cliente == null || cliente.getCpf() == null) {
+            throw new PagamentoException("Cliente com ID " + idCliente + " não encontrado ou inválido.");
+        }
+        logger.info("Cliente encontrado: {}", cliente.getNome());
+
+        // 2. Busca débitos pendentes de outros serviços.
+        BigDecimal totalVendas = buscarTotalVendas(idCliente);
+        BigDecimal totalServicos = buscarTotalServicos(idCliente);
+
+        // 3. Soma os totais e cria o registro de pagamento.
+        BigDecimal valorTotal = totalVendas.add(totalServicos);
+        logger.info("Valor total do checkout para o cliente {}: R$ {}", cliente.getNome(), valorTotal);
+
+        if (valorTotal.compareTo(BigDecimal.ZERO) <= 0) {
+            throw new PagamentoException("Nenhum valor pendente encontrado para o cliente.");
+        }
+
+        // Usa os dados do cliente que foram buscados para criar o pagamento.
+        return this.criarPagamento(valorTotal, FormaDePagamento.PIX, System.currentTimeMillis(), cliente.getNome(), cliente.getCpf(), idUsuario);
+    }
+
+    private BigDecimal buscarTotalVendas(Long idCliente) {
         try {
-            logger.info("Buscando carrinho para o cliente ID: {}", idCliente);
             CarrinhoResponseDTO carrinhoResponse = webClientBuilder.build().get()
                 .uri("http://VENDAS-SERVICE/carrinho/{idCliente}", idCliente)
                 .retrieve()
-                .bodyToMono(CarrinhoResponseDTO.class)
-                .block(); // .block() torna a chamada síncrona, esperando a resposta.
-
+                .bodyToMono(CarrinhoResponseDTO.class).block();
             if (carrinhoResponse != null && carrinhoResponse.isSuccess() && carrinhoResponse.getData() != null && carrinhoResponse.getData().getTotal() != null) {
-                totalVendas = carrinhoResponse.getData().getTotal();
-                logger.info("Total do carrinho encontrado: {}", totalVendas);
+                logger.info("Total do carrinho encontrado: R$ {}", carrinhoResponse.getData().getTotal());
+                return carrinhoResponse.getData().getTotal();
             }
         } catch (Exception e) {
             logger.warn("AVISO: Nao foi possivel buscar carrinho de compras do vendas-service: {}", e.getMessage());
         }
+        return BigDecimal.ZERO;
+    }
 
-        // 2. Busca o total de serviços pendentes no 'servicos-service'
-        //    (Esta chamada funcionará assim que você criar o endpoint no outro serviço)
+    private BigDecimal buscarTotalServicos(Long idCliente) {
         try {
-            logger.info("Buscando agendamentos pendentes para o cliente ID: {}", idCliente);
             AgendamentoResponseDTO[] agendamentos = webClientBuilder.build().get()
                 .uri("http://AGENDAMENTO/agendamentos/cliente/{idCliente}/pendentes", idCliente)
                 .retrieve()
                 .bodyToMono(AgendamentoResponseDTO[].class)
-                .onErrorResume(e -> Mono.empty()) // Continua se o serviço falhar ou não encontrar nada
+                .onErrorResume(e -> Mono.empty())
                 .block();
-
             if (agendamentos != null) {
+                BigDecimal total = BigDecimal.ZERO;
                 for (AgendamentoResponseDTO agendamento : agendamentos) {
                     if (agendamento.getValorServico() != null) {
-                        totalServicos = totalServicos.add(agendamento.getValorServico());
+                        total = total.add(agendamento.getValorServico());
                     }
                 }
-                logger.info("Total de serviços encontrado: {}", totalServicos);
+                logger.info("Total de serviços encontrado: R$ {}", total);
+                return total;
             }
         } catch (Exception e) {
             logger.warn("AVISO: Nao foi possivel buscar agendamentos pendentes do servicos-service: {}", e.getMessage());
         }
-
-        // 3. Soma os totais e cria o registro de pagamento
-        BigDecimal valorTotal = totalVendas.add(totalServicos);
-        logger.info("Valor total do checkout para o cliente ID {}: {}", idCliente, valorTotal);
-
-        if (valorTotal.compareTo(BigDecimal.ZERO) <= 0) {
-            throw new PagamentoException("Nenhum valor pendente encontrado para o cliente com ID: " + idCliente);
-        }
-
-        // Reutiliza seu método de criação de pagamento original
-        return this.criarPagamento(valorTotal, FormaDePagamento.PIX, System.currentTimeMillis(), nomeCliente, cpfCliente, idUsuario);
+        return BigDecimal.ZERO;
     }
 
-
-    // --- MÉTODOS ORIGINAIS DO SEU SERVIÇO (MANTIDOS) ---
+    // --- SEUS MÉTODOS ORIGINAIS (Mantidos e Corrigidos) ---
 
     public Pagamento criarPagamento(BigDecimal valor, FormaDePagamento formaPagamento, Long idPedido, String nomeCliente, String cpfCliente, Long idUsuario) {
         if (valor == null || valor.compareTo(BigDecimal.ZERO) <= 0) throw new PagamentoException("Valor deve ser maior que zero");
         if (idUsuario == null) throw new PagamentoException("ID do usuário é obrigatório");
         if (formaPagamento == null) throw new PagamentoException("Forma de pagamento é obrigatória");
-        
+
         Pagamento pagamento = new Pagamento();
         pagamento.setValor(valor);
         pagamento.setFormaPagamento(formaPagamento);
@@ -106,6 +121,10 @@ public class PagamentoService {
         pagamento.setCpfCliente(cpfCliente);
         pagamento.setIdUsuario(idUsuario);
         pagamento.setStatus(StatusPagamento.PENDENTE);
+        
+        // CORREÇÃO FINAL: Define a data e hora atuais para evitar o erro de coluna nula
+        pagamento.setDataPagamento(LocalDateTime.now()); 
+
         return pagamentoRepository.save(pagamento);
     }
 

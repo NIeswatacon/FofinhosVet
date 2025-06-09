@@ -2,7 +2,7 @@ package br.com.petshop.conta_service.dto;
 
 import jakarta.validation.constraints.Email;
 import jakarta.validation.constraints.NotBlank;
-import org.hibernate.validator.constraints.br.CPF;
+//import org.hibernate.validator.constraints.br.CPF;
 
 public class ClienteDTO {
 
@@ -16,7 +16,7 @@ public class ClienteDTO {
     private String email;
 
     @NotBlank(message = "O CPF é obrigatório")
-    @CPF(message = "CPF inválido")
+    //@CPF(message = "CPF inválido")
     private String cpf;
 
     private String telefone;

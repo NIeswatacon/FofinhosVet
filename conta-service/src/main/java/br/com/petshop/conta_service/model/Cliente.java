@@ -37,6 +37,8 @@ public class Cliente {
     protected void onCreate() {
         dataCadastro = LocalDateTime.now();
     }
+    @Column(nullable = false)
+    private String senha;
 
      @OneToMany(mappedBy = "cliente", cascade = CascadeType.ALL, orphanRemoval = true)
     @JsonManagedReference
