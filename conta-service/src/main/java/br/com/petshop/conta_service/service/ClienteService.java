@@ -3,6 +3,7 @@ package br.com.petshop.conta_service.service;
 import br.com.petshop.conta_service.model.Cliente;
 import br.com.petshop.conta_service.repository.ClienteRepository;
 import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.security.crypto.password.PasswordEncoder;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional; 
 
@@ -13,10 +14,12 @@ import java.util.Optional;
 public class ClienteService {
 
     private final ClienteRepository clienteRepository;
+    private final PasswordEncoder passwordEncoder;
 
-    @Autowired
-    public ClienteService(ClienteRepository clienteRepository) {
+     @Autowired
+    public ClienteService(ClienteRepository clienteRepository, PasswordEncoder passwordEncoder) {
         this.clienteRepository = clienteRepository;
+        this.passwordEncoder = passwordEncoder;
     }
 
     // --- MÉTODO ADICIONADO PARA O LOGIN ---
@@ -37,6 +40,7 @@ public class ClienteService {
         if (cliente.getCpf() != null && clienteRepository.findByCpf(cliente.getCpf()).isPresent()) {
             throw new RuntimeException("CPF já cadastrado.");
         }
+        cliente.setSenha(passwordEncoder.encode(cliente.getSenha()));
         return clienteRepository.save(cliente);
     }
 
