@@ -6,8 +6,6 @@ import NavBar from '../../components/NavBar/NavBar';
 const API_AGENDAMENTOS_BASE_URL = 'http://localhost:8080/api/agendamentos'; // Gateway
 const API_CONTAS_BASE_URL = 'http://localhost:8080/api/contas'; // Gateway
 
-const LOGGED_IN_CLIENT_ID = 1; // Exemplo: Cliente com ID 1
-
 export const ServicoEnumFrontend = {
   BANHO: "BANHO",
   TOSA: "TOSA",
@@ -47,6 +45,7 @@ interface Pet {
 
 export const AgendamentosPage = () => {
   const [agendamentos, setAgendamentos] = useState<Agendamento[]>([]);
+  const [clienteIdFromAuth, setClienteIdFromAuth] = useState<number | null>(null); // Estado para o ID do cliente logado
   const [loggedInCliente, setLoggedInCliente] = useState<Cliente | null>(null);
   const [pets, setPets] = useState<Pet[]>([]);
   const [selectedPetIdForDropdown, setSelectedPetIdForDropdown] = useState<string>('');
@@ -62,6 +61,20 @@ export const AgendamentosPage = () => {
   const [isSubmitting, setIsSubmitting] = useState(false); // Estado para o loading do submit
   const [error, setError] = useState<string | null>(null);
   const [successMessage, setSuccessMessage] = useState<string | null>(null);
+
+  useEffect(() => {
+    // Simula a obtenção do ID do cliente do localStorage ou de um contexto de autenticação
+    // No seu aplicativo real, isso viria do seu sistema de autenticação
+    const storedClienteId = localStorage.getItem('loggedInClienteId');
+    if (storedClienteId) {
+      const parsedId = parseInt(storedClienteId, 10);
+      if (!isNaN(parsedId)) {
+        setClienteIdFromAuth(parsedId);
+      } else {
+        setError("ID de cliente armazenado é inválido.");
+      }
+    }
+  }, []); // Executa apenas uma vez na montagem para buscar o ID
 
   const fetchAgendamentos = async () => {
     if (!loggedInCliente) return;
@@ -82,24 +95,24 @@ export const AgendamentosPage = () => {
     }
   };
 
-    const fetchLoggedInClienteData = async () => {
-    if (!LOGGED_IN_CLIENT_ID) {
+    const fetchLoggedInClienteData = async (id: number) => {
+    if (!id) {
       setError("ID do cliente logado não definido.");
       setLoggedInCliente(null);
       return;
     }
     setIsLoading(true);
     try {
-      const response = await axios.get<Cliente>(`${API_CONTAS_BASE_URL}/clientes/${LOGGED_IN_CLIENT_ID}`);
+      const response = await axios.get<Cliente>(`${API_CONTAS_BASE_URL}/clientes/${id}`);
       setLoggedInCliente(response.data);
       // Pré-preenche nomeCliente no formData
       setFormData(prev => ({ ...prev, nomeCliente: response.data.nome }));
     } catch (err) {
-      setError(`Falha ao buscar dados do cliente ID: ${LOGGED_IN_CLIENT_ID}. Verifique se o cliente existe e o microserviço de Contas está rodando.`);
+      setError(`Falha ao buscar dados do cliente ID: ${id}. Verifique se o cliente existe e o microserviço de Contas está rodando.`);
       console.error(err);
       setLoggedInCliente(null);
     } finally {
-      setIsLoading(false);
+      setIsLoading(false); // Garante que o loading seja desativado
     }
   };
 
@@ -125,9 +138,14 @@ export const AgendamentosPage = () => {
     }
     };
 
-      useEffect(() => {
-    fetchLoggedInClienteData();
-  }, [LOGGED_IN_CLIENT_ID]); // Dependência no ID do cliente logado
+  useEffect(() => {
+    if (clienteIdFromAuth) {
+      fetchLoggedInClienteData(clienteIdFromAuth);
+    } else if (!localStorage.getItem('loggedInClienteId')) { // Se não houver ID no localStorage após a tentativa inicial
+        setError("Nenhum cliente logado. Por favor, faça o login para acessar esta página.");
+        setLoggedInCliente(null); // Garante que não há dados de cliente se não houver ID
+    }
+  }, [clienteIdFromAuth]); // Dependência no ID do cliente obtido da "autenticação"
 
    useEffect(() => {
         if (loggedInCliente && loggedInCliente.id) {
@@ -205,13 +223,13 @@ export const AgendamentosPage = () => {
     return <div className={styles.container}><p>Carregando dados do cliente...</p></div>;
   }
 
-  if (!loggedInCliente && !isLoading && error) {
+  if (!loggedInCliente && !isLoading && error && clienteIdFromAuth) { // Mostra erro de busca se tentou buscar com um ID
     return <div className={styles.container}><p className={styles.errorMessage}>{error}</p></div>;
   }
 
-  if (!loggedInCliente) {
-    // Poderia ser uma mensagem mais amigável ou redirecionamento para login
-    return <div className={styles.container}><p>Não foi possível carregar os dados do cliente. Tente recarregar a página ou contate o suporte.</p></div>;
+  if (!clienteIdFromAuth && !isLoading) { // Se não há ID e não está carregando
+    // Mensagem para o usuário fazer login ou erro se o ID não foi encontrado
+    return <div className={styles.container}><p className={styles.errorMessage}>{error || "Por favor, faça login para ver seus agendamentos."}</p></div>;
   }
 
 
