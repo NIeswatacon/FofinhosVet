@@ -28,7 +28,12 @@ const ModalCarrinho: React.FC<ModalCarrinhoProps> = ({ isVisible, onClose, idCli
     setError(null);
     try {
       const response = await axios.get<ApiResponse<CarrinhoDetalhado>>(
-        `http://localhost:8080/api/vendas/carrinho/${idCliente}`
+        `http://localhost:8080/api/vendas/carrinho`,
+        {
+          headers: {
+            'X-User-ID': idCliente.toString(),
+          },
+        }
       );
       const result = response.data;
       if (result.success) {

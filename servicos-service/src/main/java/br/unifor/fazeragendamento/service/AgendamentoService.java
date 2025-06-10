@@ -28,15 +28,15 @@ public class AgendamentoService {
         this.webClientContas = webClientBuilder.baseUrl("http://CONTA/api/contas").build();
     }
 
-    public Agendamento criarAgendamento(AgendamentoRequestDTO dto) { // Agora o Java sabe o que é AgendamentoRequestDTO
+    public Agendamento criarAgendamento(Long userId, AgendamentoRequestDTO dto) { 
         // 1. Validar Cliente e Pet
-        ClienteDTO cliente = validarCliente(dto.getIdCliente());
-        PetDTO pet = validarPetDoCliente(dto.getIdCliente(), dto.getIdPet());
+        ClienteDTO cliente = validarCliente(userId);
+        PetDTO pet = validarPetDoCliente(userId, dto.getIdPet());
 
         // 2. Montar e salvar a entidade Agendamento
         Agendamento agendamento = new Agendamento();
         
-        agendamento.setClienteId(cliente.getId());
+        agendamento.setClienteId(userId);
         agendamento.setNomeCliente(cliente.getNome());
         
         agendamento.setData(dto.getData());

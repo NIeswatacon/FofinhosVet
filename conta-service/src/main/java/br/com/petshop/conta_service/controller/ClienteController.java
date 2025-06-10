@@ -111,10 +111,32 @@ public class ClienteController {
         }
     }
 
+    @PutMapping("/{id}")
+    public ResponseEntity<ClienteDTO> atualizarClientePorId(@PathVariable Long id,
+                                                            @Valid @RequestBody ClienteDTO clienteDTO) {
+        try {
+            Cliente cliente = clienteToEntity(clienteDTO);
+            Cliente clienteAtualizado = clienteService.atualizarCliente(id, cliente);
+            return ResponseEntity.ok(clienteToDTO(clienteAtualizado));
+        } catch (RuntimeException e) {
+            return ResponseEntity.notFound().build();
+        }
+    }
+
     @DeleteMapping("/me")
     public ResponseEntity<Void> deletarCliente(@RequestHeader("X-User-ID") String userId) {
         try {
             clienteService.deletarCliente(Long.parseLong(userId));
+            return ResponseEntity.noContent().build();
+        } catch (RuntimeException e) {
+            return ResponseEntity.notFound().build();
+        }
+    }
+
+    @DeleteMapping("/{id}")
+    public ResponseEntity<Void> deletarClientePorId(@PathVariable Long id) {
+        try {
+            clienteService.deletarCliente(id);
             return ResponseEntity.noContent().build();
         } catch (RuntimeException e) {
             return ResponseEntity.notFound().build();

@@ -12,7 +12,7 @@ export const DB_NAME = process.env.DB_NAME;
 export const DB_PORT = process.env.DB_PORT ? parseInt(process.env.DB_PORT, 10) : 3306;
 
 // Servidor
-export const SERVER_PORT = process.env.PORT ? parseInt(process.env.PORT, 10) : 3000;
+export const SERVER_PORT = process.env.PORT ? parseInt(process.env.PORT, 10) : 8086;
 
 // JWT
 export const JWT_SECRET = process.env.JWT_SECRET;

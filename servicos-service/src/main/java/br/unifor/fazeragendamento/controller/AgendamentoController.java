@@ -28,9 +28,9 @@ public class AgendamentoController {
     }
 
     @PostMapping
-    public ResponseEntity<?> agendar(@RequestBody AgendamentoRequestDTO dto) { // Agora o Java sabe o que é AgendamentoRequestDTO
+    public ResponseEntity<?> agendar(@RequestHeader("X-User-ID") String userId, @RequestBody AgendamentoRequestDTO dto) { 
         try {
-            return new ResponseEntity<>(service.criarAgendamento(dto), HttpStatus.CREATED);
+            return new ResponseEntity<>(service.criarAgendamento(Long.parseLong(userId), dto), HttpStatus.CREATED);
         } catch (RuntimeException e) {
             // Retorna a mensagem de erro no corpo da resposta para facilitar a depuração
             return ResponseEntity.badRequest().body(e.getMessage());

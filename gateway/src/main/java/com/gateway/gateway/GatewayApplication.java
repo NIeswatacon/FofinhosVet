@@ -8,6 +8,10 @@ import org.springframework.context.annotation.Configuration;
 import org.springframework.web.cors.CorsConfiguration;
 import org.springframework.web.cors.reactive.CorsWebFilter;
 import org.springframework.web.cors.reactive.UrlBasedCorsConfigurationSource;
+import org.springframework.web.server.ServerWebExchange;
+import org.springframework.web.server.WebFilter;
+import org.springframework.web.server.WebFilterChain;
+import reactor.core.publisher.Mono;
 
 @SpringBootApplication
 public class GatewayApplication {
@@ -35,6 +39,21 @@ public class GatewayApplication {
             source.registerCorsConfiguration("/**", config);
 
             return new CorsWebFilter(source);
+        }
+
+        @Bean
+        public WebFilter corsFilter() {
+            return (ServerWebExchange exchange, WebFilterChain chain) -> {
+                var response = exchange.getResponse();
+                var headers = response.getHeaders();
+                
+                // Se o header já existe, não adiciona novamente
+                if (!headers.containsKey("Access-Control-Allow-Origin")) {
+                    headers.add("Access-Control-Allow-Origin", "http://localhost:5173");
+                }
+                
+                return chain.filter(exchange);
+            };
         }
     }
 }

@@ -2,6 +2,7 @@ import { useRoutes } from "react-router-dom";
 import Home from "../pages/Home";
 import Login from "../pages/Login/Login";
 import CadastroPaga from "../pages/Cadastro/cadastroPaga";
+import CadastroPet from "../pages/Pets/CadastroPet";
 import { AgendamentosPage } from "../pages/Agendamentos/AgendamentosPage";
 import PagamentoComponent from "../pages/Pagamento/Pagamento";
 import Cartao from "../pages/Cartao/Cartao";
@@ -17,6 +18,7 @@ export default function AppRoutes() {
     { path: '/', element: <Home /> },
     { path: '/login', element: <Login /> },
     { path: '/cadastro', element: <CadastroPaga /> },
+    { path: '/cadastro-pet', element: <CadastroPet /> },
     // Use o MainLayout real para as rotas que precisam da NavBar
     { element: <MainLayout />, children: [
         { path: '/agendamentos', element: <AgendamentosPage /> },

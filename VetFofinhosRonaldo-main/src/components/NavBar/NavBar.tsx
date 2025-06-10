@@ -30,6 +30,11 @@ const NavBar: React.FC = () => {
           </NavLink>
         </li>
         <li>
+          <NavLink to="/cadastro-pet" className={({ isActive }) => isActive ? styles.activeLink : undefined}>
+            Cadastrar Pet
+          </NavLink>
+        </li>
+        <li>
           <NavLink to="/login" className={({ isActive }) => isActive ? styles.activeLink : undefined}>
             Login
           </NavLink>
