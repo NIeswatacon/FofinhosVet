@@ -9,6 +9,15 @@ import { Eureka } from 'eureka-js-client';
 const server = express();
 
 server.use(helmet());
+// Configuração do CORS
+// Permite requisições de qualquer origem para testes.
+// Lembre-se de restringir para a URL do seu frontend em produção.
+server.use(cors({
+  origin: '*', // Permite todas as origens
+  methods: ['GET', 'POST', 'PUT', 'DELETE', 'OPTIONS'],
+  allowedHeaders: ['Content-Type', 'Authorization', 'X-User-ID'],
+  credentials: true // Se você usar cookies/auth headers
+}));
 
 server.use(express.json());
 server.use(express.urlencoded({ extended: true }));

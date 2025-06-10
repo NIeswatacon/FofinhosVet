@@ -30,7 +30,13 @@ public class GatewayApplication {
                 "http://localhost:5173",
                 "https://vet-fofinho-ronaldo.vercel.app"
             ));
-            config.setAllowedHeaders(Arrays.asList("Authorization", "Content-Type", "Accept"));
+            config.setAllowedHeaders(Arrays.asList(
+                "Authorization", 
+                "Content-Type", 
+                "Accept", 
+                "X-User-ID",
+                "x-user-id"
+            ));
             config.setExposedHeaders(Arrays.asList("Authorization"));
             config.setAllowedMethods(Arrays.asList("GET", "POST", "PUT", "DELETE", "OPTIONS"));
             config.setMaxAge(3600L);
