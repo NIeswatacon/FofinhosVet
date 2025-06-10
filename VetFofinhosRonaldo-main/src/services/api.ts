@@ -2,67 +2,61 @@
 import axios from 'axios';
 import type { AxiosError, InternalAxiosRequestConfig } from 'axios';
 
-// Criando uma instância do Axios com configurações base
+// Criando uma instância do Axios com a configuração CORRETA
 const api = axios.create({
-    baseURL: 'http://localhost:8082', // Porta do serviço de pagamento
-    timeout: 10000,
-    headers: {
-        'Content-Type': 'application/json',
-        'Access-Control-Allow-Origin': 'http://localhost:5173',
-        'Access-Control-Allow-Methods': 'GET, POST, PUT, DELETE, OPTIONS',
-        'Access-Control-Allow-Headers': '*'
-    },
-    withCredentials: true
+    // 1. APONTAR PARA O GATEWAY
+    baseURL: 'http://localhost:8080', 
+    timeout: 10000,
+    // 2. REMOVER OS CABEÇALHOS DE CORS DAQUI
+    headers: {
+        'Content-Type': 'application/json'
+    },
+    withCredentials: true
 });
 
-// Interceptor para adicionar o token em todas as requisições
+// Interceptor para adicionar o token e o User-ID (ESTA PARTE ESTÁ BOA)
 api.interceptors.request.use(
-    (config: InternalAxiosRequestConfig) => {
-        const token = localStorage.getItem('token');
-        const userStr = localStorage.getItem('user');
-        
-        if (token) {
-            config.headers.Authorization = `Bearer ${token}`;
-        }
+    (config: InternalAxiosRequestConfig) => {
+        const token = localStorage.getItem('token');
+        const userStr = localStorage.getItem('user');
+        
+        if (token) {
+            config.headers.Authorization = `Bearer ${token}`;
+        }
 
-        if (userStr) {
-            try {
-                const user = JSON.parse(userStr);
-                if (user.id) {
-                    config.headers['X-User-ID'] = user.id.toString();
-                }
-            } catch (e) {
-                console.error('Erro ao parsear dados do usuário:', e);
-            }
-        }
+        if (userStr) {
+            try {
+                const user = JSON.parse(userStr);
+                if (user.id) {
+                    config.headers['X-User-ID'] = user.id.toString();
+                }
+            } catch (e) {
+                console.error('Erro ao parsear dados do usuário:', e);
+            }
+        }
 
-        // Adiciona headers de CORS para requisições OPTIONS
-        if (config.method?.toUpperCase() === 'OPTIONS') {
-            config.headers['Access-Control-Allow-Origin'] = 'http://localhost:5173';
-            config.headers['Access-Control-Allow-Methods'] = 'GET, POST, PUT, DELETE, OPTIONS';
-            config.headers['Access-Control-Allow-Headers'] = '*';
-        }
+        // 3. REMOVER ESTE BLOCO 'OPTIONS' COMPLETAMENTE
+        // if (config.method?.toUpperCase() === 'OPTIONS') { ... }
 
-        return config;
-    },
-    (error: AxiosError) => {
-        console.error('Erro na requisição:', error);
-        return Promise.reject(error);
-    }
+        return config;
+    },
+    (error: AxiosError) => {
+        console.error('Erro na requisição:', error);
+        return Promise.reject(error);
+    }
 );
 
-// Interceptor para tratar erros nas respostas
+// Interceptor para tratar erros de autenticação (ESTA PARTE ESTÁ BOA)
 api.interceptors.response.use(
-    (response) => response,
-    (error: AxiosError) => {
-        if (error.response?.status === 401) {
-            // Token inválido ou expirado
-            localStorage.removeItem('token');
-            localStorage.removeItem('user');
-            window.location.href = '/login';
-        }
-        return Promise.reject(error);
-    }
+    (response) => response,
+    (error: AxiosError) => {
+        if (error.response?.status === 401) {
+            localStorage.removeItem('token');
+            localStorage.removeItem('user');
+            window.location.href = '/login';
+        }
+        return Promise.reject(error);
+    }
 );
 
 export default api;

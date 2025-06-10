@@ -1,4 +1,4 @@
-package br.unifor.fazeragendamento;
+package br.unifor.fazeragendamento.dto;
 
 import lombok.Data;
 import java.math.BigDecimal;

@@ -1,7 +1,7 @@
 package br.unifor.fazeragendamento.service;
 
-import br.unifor.fazeragendamento.AgendamentoRequestDTO; 
 import br.unifor.fazeragendamento.dto.PetDTO;
+import br.unifor.fazeragendamento.dto.AgendamentoRequestDTO;
 import br.unifor.fazeragendamento.dto.ClienteDTO;
 import br.unifor.fazeragendamento.model.Agendamento;
 import br.unifor.fazeragendamento.repository.AgendamentoRepository;

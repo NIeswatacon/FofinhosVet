@@ -136,7 +136,7 @@ const Login: React.FC = () => {
         console.error('Resposta inválida:', response.data);
         setError('Resposta inválida do servidor');
       }
-    } catch (err) {
+    } catch (err: any) {
       console.error('=== ERRO NO LOGIN ===');
       console.error('Erro completo:', err);
       if (err.response) {

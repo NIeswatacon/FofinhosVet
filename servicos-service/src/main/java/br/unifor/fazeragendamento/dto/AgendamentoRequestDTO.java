@@ -1,4 +1,4 @@
-package br.unifor.fazeragendamento;
+package br.unifor.fazeragendamento.dto;
 
 import br.unifor.fazeragendamento.model.ServicoEnum;
 import java.time.LocalDate;

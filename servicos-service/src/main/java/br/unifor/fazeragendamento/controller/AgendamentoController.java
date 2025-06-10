@@ -1,7 +1,7 @@
 package br.unifor.fazeragendamento.controller;
 
-import br.unifor.fazeragendamento.AgendamentoRequestDTO;
-import br.unifor.fazeragendamento.AgendamentoResponseDTO;
+import br.unifor.fazeragendamento.dto.AgendamentoRequestDTO;
+import br.unifor.fazeragendamento.dto.AgendamentoResponseDTO;
 import br.unifor.fazeragendamento.model.Agendamento;
 import br.unifor.fazeragendamento.service.AgendamentoService;
 import org.springframework.beans.factory.annotation.Autowired;
