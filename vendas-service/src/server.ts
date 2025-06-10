@@ -13,11 +13,14 @@ server.use(helmet());
 // Permite requisições de qualquer origem para testes.
 // Lembre-se de restringir para a URL do seu frontend em produção.
 server.use(cors({
-  origin: 'true', // Permite todas as origens
+  origin: (origin, callback) => {
+    callback(null, true);
+  },
   methods: ['GET', 'POST', 'PUT', 'DELETE', 'OPTIONS'],
   allowedHeaders: ['Content-Type', 'Authorization', 'X-User-ID'],
-  credentials: true // Se você usar cookies/auth headers
+  credentials: true,
 }));
+
 
 server.use(express.json());
 server.use(express.urlencoded({ extended: true }));
