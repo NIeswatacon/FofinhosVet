@@ -26,22 +26,18 @@ export class CartaoError extends Error {
   }
 }
 
-// Função auxiliar para obter o ID do usuário
-const getUserId = (): number => {
+// Função auxiliar para obter o ID do usuário do localStorage
+const getUserId = (): number | null => {
   const userStr = localStorage.getItem('user');
   if (!userStr) {
-    throw new CartaoError('Usuário não encontrado. Por favor, faça login novamente.');
+    return null;
   }
-
   try {
     const user = JSON.parse(userStr);
-    if (!user.id) {
-      throw new CartaoError('ID do usuário não encontrado. Por favor, faça login novamente.');
-    }
-    return user.id;
+    return user.id || null;
   } catch (e) {
-    console.error('Erro ao parsear dados do usuário:', e);
-    throw new CartaoError('Erro ao carregar dados do usuário. Por favor, faça login novamente.');
+    console.error('Erro ao obter ID do usuário:', e);
+    return null;
   }
 };
 
@@ -77,9 +73,18 @@ export const cartaoService = {
     try {
       console.log('Iniciando busca de cartões...');
       const userId = getUserId();
-      console.log('ID do usuário:', userId);
+      
+      if (!userId) {
+        console.log('Usuário não encontrado, retornando lista vazia');
+        return [];
+      }
 
-      const response = await api.get<Cartao[]>('/api/cartoes');
+      console.log('ID do usuário:', userId);
+      const response = await api.get<Cartao[]>('/api/cartoes', {
+        headers: {
+          'X-User-ID': userId.toString()
+        }
+      });
       console.log('Cartões encontrados:', response.data);
       return response.data;
     } catch (error) {

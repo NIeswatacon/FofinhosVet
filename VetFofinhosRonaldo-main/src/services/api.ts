@@ -4,11 +4,15 @@ import type { AxiosError, InternalAxiosRequestConfig } from 'axios';
 
 // Criando uma instância do Axios com configurações base
 const api = axios.create({
-    baseURL: 'http://localhost:8080',
+    baseURL: 'http://localhost:8083', // Porta do serviço de pagamento
     timeout: 10000,
     headers: {
-        'Content-Type': 'application/json'
-    }
+        'Content-Type': 'application/json',
+        'Access-Control-Allow-Origin': 'http://localhost:5173',
+        'Access-Control-Allow-Methods': 'GET, POST, PUT, DELETE, OPTIONS',
+        'Access-Control-Allow-Headers': '*'
+    },
+    withCredentials: true
 });
 
 // Interceptor para adicionar o token em todas as requisições
@@ -30,6 +34,13 @@ api.interceptors.request.use(
             } catch (e) {
                 console.error('Erro ao parsear dados do usuário:', e);
             }
+        }
+
+        // Adiciona headers de CORS para requisições OPTIONS
+        if (config.method?.toUpperCase() === 'OPTIONS') {
+            config.headers['Access-Control-Allow-Origin'] = 'http://localhost:5173';
+            config.headers['Access-Control-Allow-Methods'] = 'GET, POST, PUT, DELETE, OPTIONS';
+            config.headers['Access-Control-Allow-Headers'] = '*';
         }
 
         return config;

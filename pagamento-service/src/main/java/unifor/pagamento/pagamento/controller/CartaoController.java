@@ -8,17 +8,20 @@ import org.springframework.web.bind.annotation.*;
 import unifor.pagamento.pagamento.dto.CartaoDTO;
 import unifor.pagamento.pagamento.model.Cartao;
 import unifor.pagamento.pagamento.repository.CartaoRepository;
+import unifor.pagamento.pagamento.Service.UsuarioService;
 
 import java.util.List;
 import java.util.stream.Collectors;
 
 @RestController
 @RequestMapping("/api/cartoes")
-@CrossOrigin(origins = "http://localhost:5173") // Ajuste a origem conforme seu frontend
 public class CartaoController {
 
     @Autowired
     private CartaoRepository cartaoRepository;
+
+    @Autowired
+    private UsuarioService usuarioService;
 
     // --- MÉTODOS DE CONVERSÃO ---
     private CartaoDTO toDTO(Cartao cartao) {
@@ -51,6 +54,12 @@ public class CartaoController {
 
     @PostMapping
     public ResponseEntity<CartaoDTO> criarCartao(@Valid @RequestBody CartaoDTO cartaoDTO) {
+        // Verifica se o usuário existe e obtém o CPF
+        var usuario = usuarioService.buscarUsuarioPorId(cartaoDTO.getIdUsuario());
+        if (usuario == null) {
+            return ResponseEntity.status(HttpStatus.NOT_FOUND).build();
+        }
+
         // Garante que não está tentando criar um cartão com um ID existente
         cartaoDTO.setId(null);
         Cartao cartao = toEntity(cartaoDTO);
@@ -59,21 +68,29 @@ public class CartaoController {
     }
 
     @GetMapping
-    public ResponseEntity<List<CartaoDTO>> listarCartoesPorUsuarioLogado(@RequestHeader(value = "X-User-ID", required = false) Long idUsuarioX,
-                                                                         @RequestHeader(value = "x-user-id", required = false) Long idUsuariox) {
+    public ResponseEntity<List<CartaoDTO>> listarCartoesPorUsuarioLogado(
+            @RequestHeader(value = "X-User-ID", required = false) Long idUsuarioX,
+            @RequestHeader(value = "x-user-id", required = false) Long idUsuariox) {
+        
         Long idUsuario = idUsuarioX != null ? idUsuarioX : idUsuariox;
+        
+        // Se não houver ID do usuário, retorna lista vazia ao invés de erro
         if (idUsuario == null) {
-            return ResponseEntity.badRequest().build();
+            return ResponseEntity.ok(List.of());
         }
-        List<CartaoDTO> cartoes = cartaoRepository.findByIdUsuario(idUsuario).stream()
+
+        List<CartaoDTO> cartoes = cartaoRepository.findByIdUsuario(idUsuario)
+                .stream()
                 .map(this::toDTO)
                 .collect(Collectors.toList());
+        
         return ResponseEntity.ok(cartoes);
     }
 
     @GetMapping("/usuario/{idUsuario}")
     public ResponseEntity<List<CartaoDTO>> buscarPorIdUsuario(@PathVariable Long idUsuario) {
-        List<CartaoDTO> cartoes = cartaoRepository.findByIdUsuario(idUsuario).stream()
+        List<CartaoDTO> cartoes = cartaoRepository.findByIdUsuario(idUsuario)
+                .stream()
                 .map(this::toDTO)
                 .collect(Collectors.toList());
         return ResponseEntity.ok(cartoes);

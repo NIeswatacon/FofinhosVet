@@ -12,7 +12,6 @@ import java.util.List;
 
 @RestController
 @RequestMapping("/api/pagamentos")
-@CrossOrigin(origins = "http://localhost:5173") // Ajuste se seu frontend usar outra porta
 public class PagamentoController {
 
     @Autowired

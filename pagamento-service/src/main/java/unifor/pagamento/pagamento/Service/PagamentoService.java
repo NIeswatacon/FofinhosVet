@@ -4,8 +4,7 @@ import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Service;
-import org.springframework.web.reactive.function.client.WebClient;
-import reactor.core.publisher.Mono;
+import org.springframework.web.client.RestTemplate;
 import unifor.pagamento.pagamento.dto.AgendamentoResponseDTO;
 import unifor.pagamento.pagamento.dto.CarrinhoResponseDTO;
 import unifor.pagamento.pagamento.dto.ClienteDTO;
@@ -24,12 +23,12 @@ public class PagamentoService {
 
     private static final Logger logger = LoggerFactory.getLogger(PagamentoService.class);
     private final PagamentoRepository pagamentoRepository;
-    private final WebClient.Builder webClientBuilder;
+    private final RestTemplate restTemplate;
 
     @Autowired
-    public PagamentoService(PagamentoRepository pagamentoRepository, WebClient.Builder webClientBuilder) {
+    public PagamentoService(PagamentoRepository pagamentoRepository, RestTemplate restTemplate) {
         this.pagamentoRepository = pagamentoRepository;
-        this.webClientBuilder = webClientBuilder;
+        this.restTemplate = restTemplate;
     }
 
     /**
@@ -39,11 +38,7 @@ public class PagamentoService {
     public Pagamento processarCheckoutCliente(Long idCliente, Long idUsuario) {
         // 1. Busca os detalhes do cliente no conta-service para obter nome e CPF.
         logger.info("Buscando dados para o cliente ID: {}", idCliente);
-        ClienteDTO cliente = webClientBuilder.build().get()
-                .uri("http://CONTA/api/contas/clientes/{idCliente}", idCliente)
-                .retrieve()
-                .bodyToMono(ClienteDTO.class)
-                .block();
+        ClienteDTO cliente = restTemplate.getForObject("http://CONTA/api/contas/clientes/{idCliente}", ClienteDTO.class, idCliente);
 
         if (cliente == null || cliente.getCpf() == null) {
             throw new PagamentoException("Cliente com ID " + idCliente + " não encontrado ou inválido.");
@@ -68,10 +63,7 @@ public class PagamentoService {
 
     private BigDecimal buscarTotalVendas(Long idCliente) {
         try {
-            CarrinhoResponseDTO carrinhoResponse = webClientBuilder.build().get()
-                .uri("http://VENDAS-SERVICE/carrinho/{idCliente}", idCliente)
-                .retrieve()
-                .bodyToMono(CarrinhoResponseDTO.class).block();
+            CarrinhoResponseDTO carrinhoResponse = restTemplate.getForObject("http://VENDAS-SERVICE/carrinho/{idCliente}", CarrinhoResponseDTO.class, idCliente);
             if (carrinhoResponse != null && carrinhoResponse.isSuccess() && carrinhoResponse.getData() != null && carrinhoResponse.getData().getTotal() != null) {
                 logger.info("Total do carrinho encontrado: R$ {}", carrinhoResponse.getData().getTotal());
                 return carrinhoResponse.getData().getTotal();
@@ -84,12 +76,7 @@ public class PagamentoService {
 
     private BigDecimal buscarTotalServicos(Long idCliente) {
         try {
-            AgendamentoResponseDTO[] agendamentos = webClientBuilder.build().get()
-                .uri("http://AGENDAMENTO/agendamentos/cliente/{idCliente}/pendentes", idCliente)
-                .retrieve()
-                .bodyToMono(AgendamentoResponseDTO[].class)
-                .onErrorResume(e -> Mono.empty())
-                .block();
+            AgendamentoResponseDTO[] agendamentos = restTemplate.getForObject("http://AGENDAMENTO/agendamentos/cliente/{idCliente}/pendentes", AgendamentoResponseDTO[].class, idCliente);
             if (agendamentos != null) {
                 BigDecimal total = BigDecimal.ZERO;
                 for (AgendamentoResponseDTO agendamento : agendamentos) {
