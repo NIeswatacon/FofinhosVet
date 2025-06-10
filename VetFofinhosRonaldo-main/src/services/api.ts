@@ -1,32 +1,33 @@
 // src/services/api.ts
 import axios, { AxiosError } from 'axios';
-import type { AxiosInstance, AxiosResponse, InternalAxiosRequestConfig as OriginalInternalAxiosRequestConfig } from 'axios';
+import type {
+  AxiosInstance,
+  AxiosResponse,
+  InternalAxiosRequestConfig as OriginalInternalAxiosRequestConfig,
+} from 'axios';
 import { AxiosHeaders } from 'axios';
 
-// Extend InternalAxiosRequestConfig to include _retry for type safety
 interface InternalAxiosRequestConfig extends OriginalInternalAxiosRequestConfig {
   _retry?: boolean;
 }
 
-// Client principal, único necessário
 const api: AxiosInstance = axios.create({
-  baseURL: import.meta.env.VITE_API_BASE_URL || 'http://localhost:8080', // Gateway
+  baseURL: import.meta.env.VITE_API_BASE_URL || 'http://localhost:8080', // ✅ Usa apenas o Gateway
   timeout: 10000,
   headers: {
     'Content-Type': 'application/json',
-    'Accept': 'application/json'
+    'Accept': 'application/json',
   },
-  withCredentials: true // Importante para CORS
+  withCredentials: true, // ✅ Permite envio de cookies/sessão se necessário
 });
 
-// Interceptor para adicionar token JWT no cabeçalho
+// Interceptor de requisição para adicionar token JWT
 api.interceptors.request.use(
   (config: InternalAxiosRequestConfig) => {
     console.log('=== REQUISIÇÃO ENVIADA ===');
     console.log('URL:', config.url);
     console.log('Método:', config.method);
     console.log('Dados:', config.data);
-    console.log('Headers:', config.headers);
 
     const token = localStorage.getItem('token');
     if (token) {
@@ -38,38 +39,27 @@ api.interceptors.request.use(
     return config;
   },
   (error: AxiosError) => {
-    console.error('=== ERRO NA REQUISIÇÃO ===');
-    console.error('Erro:', error);
+    console.error('=== ERRO NA REQUISIÇÃO ===', error);
     return Promise.reject(error);
   }
 );
 
-// Interceptor para tratamento de respostas
+// Interceptor de resposta
 api.interceptors.response.use(
   (response: AxiosResponse) => {
     console.log('=== RESPOSTA RECEBIDA ===');
     console.log('Status:', response.status);
-    console.log('Dados:', response.data);
     return response;
   },
   async (error: AxiosError) => {
-    console.error('=== ERRO NA RESPOSTA ===');
-    console.error('Erro completo:', error);
-    
-    if (error.response) {
-      console.error('Status:', error.response.status);
-      console.error('Dados:', error.response.data);
-    } else if (error.request) {
-      console.error('Erro na requisição:', error.request);
-    } else {
-      console.error('Erro:', error.message);
-    }
+    console.error('=== ERRO NA RESPOSTA ===', error);
 
     const originalRequest = error.config as InternalAxiosRequestConfig;
 
+    // Retry automático
     if (originalRequest && (error.code === 'ECONNABORTED' || !error.response) && !originalRequest._retry) {
-      console.log('Tentando novamente a requisição...');
       originalRequest._retry = true;
+      console.log('Tentando novamente a requisição...');
       try {
         return await api.request(originalRequest);
       } catch (retryError) {
@@ -78,8 +68,9 @@ api.interceptors.response.use(
       }
     }
 
+    // Se for 401, remove token e redireciona para login
     if (originalRequest && error.response?.status === 401 && !originalRequest._retry) {
-      console.log('Token inválido ou expirado');
+      console.warn('Token inválido ou expirado');
       localStorage.removeItem('token');
       window.location.href = '/login';
     }
