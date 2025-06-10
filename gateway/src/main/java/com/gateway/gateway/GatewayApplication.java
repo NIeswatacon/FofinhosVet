@@ -21,45 +21,31 @@ public class GatewayApplication {
     }
 
     @Configuration
-    public class CorsConfig {
-        @Bean
-        public CorsWebFilter corsWebFilter() {
-            CorsConfiguration config = new CorsConfiguration();
-            config.setAllowCredentials(true);
-            config.setAllowedOrigins(Arrays.asList(
-                "http://localhost:5173",
-                "https://vet-fofinho-ronaldo.vercel.app"
-            ));
-            config.setAllowedHeaders(Arrays.asList(
-                "Authorization", 
-                "Content-Type", 
-                "Accept", 
-                "X-User-ID",
-                "x-user-id"
-            ));
-            config.setExposedHeaders(Arrays.asList("Authorization"));
-            config.setAllowedMethods(Arrays.asList("GET", "POST", "PUT", "DELETE", "OPTIONS"));
-            config.setMaxAge(3600L);
+public class CorsConfig {
 
-            UrlBasedCorsConfigurationSource source = new UrlBasedCorsConfigurationSource();
-            source.registerCorsConfiguration("/**", config);
+    @Bean
+    public CorsWebFilter corsWebFilter() {
+        CorsConfiguration config = new CorsConfiguration();
 
-            return new CorsWebFilter(source);
-        }
+        config.setAllowCredentials(true);
+        config.addAllowedOriginPattern("http://localhost:*"); // 🔥 qualquer porta local durante dev
+        config.addAllowedOrigin("https://vet-fofinho-ronaldo.vercel.app"); // produção
+        config.setAllowedHeaders(Arrays.asList(
+            "Authorization",
+            "Content-Type",
+            "Accept",
+            "X-User-ID",
+            "x-user-id"
+        ));
+        config.setExposedHeaders(Arrays.asList("Authorization"));
+        config.setAllowedMethods(Arrays.asList("GET", "POST", "PUT", "DELETE", "OPTIONS"));
+        config.setMaxAge(3600L);
 
-        @Bean
-        public WebFilter corsFilter() {
-            return (ServerWebExchange exchange, WebFilterChain chain) -> {
-                var response = exchange.getResponse();
-                var headers = response.getHeaders();
-                
-                // Se o header já existe, não adiciona novamente
-                if (!headers.containsKey("Access-Control-Allow-Origin")) {
-                    headers.add("Access-Control-Allow-Origin", "http://localhost:5173");
-                }
-                
-                return chain.filter(exchange);
-            };
-        }
+        UrlBasedCorsConfigurationSource source = new UrlBasedCorsConfigurationSource();
+        source.registerCorsConfiguration("/**", config);
+
+        return new CorsWebFilter(source);
     }
+}
+
 }
