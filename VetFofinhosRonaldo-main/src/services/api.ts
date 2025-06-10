@@ -4,7 +4,7 @@ import type { AxiosError, InternalAxiosRequestConfig } from 'axios';
 
 // Criando uma instância do Axios com configurações base
 const api = axios.create({
-    baseURL: 'http://localhost:8083', // Porta do serviço de pagamento
+    baseURL: 'http://localhost:8082', // Porta do serviço de pagamento
     timeout: 10000,
     headers: {
         'Content-Type': 'application/json',
