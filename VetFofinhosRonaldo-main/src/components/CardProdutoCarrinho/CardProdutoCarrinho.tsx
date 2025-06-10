@@ -22,12 +22,11 @@ const CardProdutoCarrinho: React.FC<CardProdutoCarrinhoProps> = ({ item, idClien
     const novaQuantidade = item.quantidade + incremento;
 
     if (novaQuantidade <= 0) {
-      await handleRemoverItemCompletamenteInternal(); // Chamar a versão interna que gerencia o estado isUpdating
-      // setIsUpdating(false); // Garantir que isUpdating seja resetado se a remoção for chamada aqui
+      await handleRemoverItemCompletamenteInternal();
       return;
     }
 
-    const apiBaseUrl = 'https://microservicevendas-production.up.railway.app';
+    const apiBaseUrl = 'http://localhost:8080/api/vendas';
     let payload: AdicionarAoCarrinhoPayload | RemoverDoCarrinhoPayload = {
       idCliente,
       idProduto: item.idProduto, // Corrigido para usar item.idProduto
@@ -81,7 +80,7 @@ const CardProdutoCarrinho: React.FC<CardProdutoCarrinhoProps> = ({ item, idClien
     const payload: RemoverDoCarrinhoPayload = { idCliente, idProduto: item.idProduto };
     console.log('[CardProdutoCarrinho] Tentando remover item completamente. Payload:', payload);
     try {
-      const response = await axios.post<ApiResponse<CarrinhoDetalhado>>(`https://microservicevendas-production.up.railway.app/carrinho/remover`, payload);
+      const response = await axios.post<ApiResponse<CarrinhoDetalhado>>(`http://localhost:8080/api/vendas/carrinho/remover`, payload);
       const result = response.data;
       if (result.success) { // A API pode retornar data: null se o carrinho for removido
         console.log('[CardProdutoCarrinho] Item removido com sucesso:', result.data);

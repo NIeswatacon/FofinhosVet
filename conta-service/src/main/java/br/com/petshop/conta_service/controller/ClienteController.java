@@ -41,11 +41,15 @@ public class ClienteController {
 
     private Cliente clienteToEntity(ClienteDTO dto) {
         Cliente cliente = new Cliente();
+        if (dto.getId() != null) {
+            cliente.setId(dto.getId());
+        }
         cliente.setNome(dto.getNome());
         cliente.setEmail(dto.getEmail());
         cliente.setCpf(dto.getCpf());
         cliente.setTelefone(dto.getTelefone());
         cliente.setEndereco(dto.getEndereco());
+        cliente.setSenha(dto.getSenha());
         return cliente;
     }
 
@@ -70,9 +74,13 @@ public class ClienteController {
 
     @PostMapping
     public ResponseEntity<ClienteDTO> criarCliente(@Valid @RequestBody ClienteDTO clienteDTO) {
-        Cliente cliente = clienteToEntity(clienteDTO);
-        Cliente novoCliente = clienteService.criarCliente(cliente);
-        return new ResponseEntity<>(clienteToDTO(novoCliente), HttpStatus.CREATED);
+        try {
+            Cliente cliente = clienteToEntity(clienteDTO);
+            Cliente novoCliente = clienteService.criarCliente(cliente);
+            return new ResponseEntity<>(clienteToDTO(novoCliente), HttpStatus.CREATED);
+        } catch (Exception e) {
+            return new ResponseEntity<>(HttpStatus.INTERNAL_SERVER_ERROR);
+        }
     }
 
     @GetMapping
@@ -125,16 +133,14 @@ public class ClienteController {
         }
     }
 
-    @GetMapping("/me/pets")
-    public ResponseEntity<List<PetDTO>> listarPetsDoCliente(@RequestHeader("X-User-ID") String userId) {
-        try {
-            List<PetDTO> pets = petService.listarPetsPorCliente(Long.parseLong(userId)).stream()
-                    .map(this::petToDTO)
-                    .collect(Collectors.toList());
-            return ResponseEntity.ok(pets);
-        } catch (RuntimeException e) {
-            return ResponseEntity.notFound().build();
-        }
+    @GetMapping("/{id}/pets")
+    public ResponseEntity<List<PetDTO>> listarPetsDoCliente(@PathVariable Long id) {
+        return clienteService.buscarClientePorId(id)
+                .map(cliente -> ResponseEntity.ok(petService.listarPetsPorCliente(id)
+                        .stream()
+                        .map(this::petToDTO)
+                        .collect(Collectors.toList())))
+                .orElse(ResponseEntity.notFound().build());
     }
 
     @GetMapping("/me/pets/{petId}")
@@ -144,5 +150,15 @@ public class ClienteController {
                 .map(this::petToDTO)
                 .map(ResponseEntity::ok)
                 .orElse(ResponseEntity.notFound().build());
+    }
+
+    @PostMapping("/teste")
+    public ResponseEntity<ClienteDTO> criarUsuarioTeste() {
+        try {
+            Cliente cliente = clienteService.criarUsuarioTeste();
+            return new ResponseEntity<>(clienteToDTO(cliente), HttpStatus.CREATED);
+        } catch (Exception e) {
+            return new ResponseEntity<>(HttpStatus.INTERNAL_SERVER_ERROR);
+        }
     }
 }

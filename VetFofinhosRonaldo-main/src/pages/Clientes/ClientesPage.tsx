@@ -27,7 +27,7 @@ const ClientesPage: React.FC = () => {
     try {
       setLoading(true);
       console.log('Iniciando carregamento de clientes...');
-      const response = await api.get<Cliente[]>('/api/usuarios');
+      const response = await api.get<Cliente[]>('/api/contas/clientes');
       console.log('Resposta da API:', response.data);
       setClientes(response.data);
       setError(null);

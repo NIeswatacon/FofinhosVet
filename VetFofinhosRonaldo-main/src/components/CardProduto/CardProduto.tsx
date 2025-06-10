@@ -41,7 +41,7 @@ const CardProduto: React.FC<CardProdutoProps> = ({ produto, idCliente, onProduto
         try {
             // Corrigido o endpoint para corresponder à API de adicionar produto ao carrinho
            const response = await axios.post<ApiResponse<CarrinhoDetalhado>>(
-                'https://microservicevendas-production.up.railway.app/carrinho/adicionar', 
+                'http://localhost:8080/api/vendas/carrinho/adicionar', 
                 payload,
                 { headers: { 'x-user-id': idCliente.toString() } }
             );

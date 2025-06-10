@@ -81,21 +81,46 @@ const Login: React.FC = () => {
     e.preventDefault();
     setError(null);
 
+    console.log('=== INÍCIO DO LOGIN NO FRONTEND ===');
+    console.log('Email:', email);
+    console.log('Senha:', senha);
+
     try {
       // Faz a requisição de login
-      const response = await api.post('/api/auth/login', {
+      console.log('Enviando requisição para:', '/api/contas/auth/login');
+      const response = await api.post('/api/contas/auth/login', {
         email,
         senha
       });
 
+      console.log('Resposta recebida:', response.data);
+
       // Se o login for bem-sucedido, salva o token
-      if (response.data.token) {
+      if (response.data && response.data.token) {
+        console.log('Token recebido, salvando no localStorage');
         localStorage.setItem('token', response.data.token);
+        // Decodifica o token para obter informações do usuário
+        const tokenData = JSON.parse(atob(response.data.token.split('.')[1]));
+        console.log('Dados do token:', tokenData);
+        localStorage.setItem('user', JSON.stringify({
+          id: tokenData.sub,
+          email: tokenData.email,
+          nome: tokenData.nome,
+          tipo: tokenData.tipo
+        }));
         // Redireciona para a página de clientes
         navigate('/clientes');
+      } else {
+        console.error('Resposta inválida:', response.data);
+        setError('Resposta inválida do servidor');
       }
     } catch (err) {
-      console.error('Erro no login:', err);
+      console.error('=== ERRO NO LOGIN ===');
+      console.error('Erro completo:', err);
+      if (err.response) {
+        console.error('Dados da resposta:', err.response.data);
+        console.error('Status da resposta:', err.response.status);
+      }
       setError('Email ou senha inválidos. Por favor, tente novamente.');
     }
   };

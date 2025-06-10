@@ -101,13 +101,18 @@ const CadastroPaga: React.FC = () => {
     e.preventDefault();
     setError(null);
 
+    console.log('=== INÍCIO DO PROCESSO DE CADASTRO ===');
+    console.log('Dados do formulário:', form);
+
     // Validação da senha
     if (form.senha !== form.confirmarSenha) {
+      console.log('Erro: As senhas não coincidem');
       setError('As senhas não coincidem');
       return;
     }
 
     if (form.senha.length < 6) {
+      console.log('Erro: Senha muito curta');
       setError('A senha deve ter pelo menos 6 caracteres');
       return;
     }
@@ -116,18 +121,43 @@ const CadastroPaga: React.FC = () => {
       // Remove o campo confirmarSenha antes de enviar
       const { confirmarSenha, ...dadosCadastro } = form;
       
-      const response = await api.post('/api/usuarios', dadosCadastro);
+      console.log('Enviando dados para a API:', dadosCadastro);
+      console.log('URL da API:', '/api/contas/clientes');
+      
+      const response = await api.post('/api/contas/clientes', dadosCadastro);
+      
+      console.log('Resposta da API:', response.data);
       
       if (response.data) {
+        console.log('Cadastro realizado com sucesso');
         setSubmitted(true);
         // Redireciona para a página de clientes após 2 segundos
         setTimeout(() => {
           navigate('/clientes');
         }, 2000);
       }
-    } catch (err) {
-      console.error('Erro no cadastro:', err);
-      setError('Erro ao realizar cadastro. Por favor, tente novamente.');
+    } catch (err: any) {
+      console.error('=== ERRO NO CADASTRO ===');
+      console.error('Erro completo:', err);
+      
+      if (err.response) {
+        console.error('Dados da resposta:', err.response.data);
+        console.error('Status da resposta:', err.response.status);
+        
+        if (err.response.status === 400) {
+          setError('Dados inválidos. Por favor, verifique os campos.');
+        } else if (err.response.status === 409) {
+          setError('Email ou CPF já cadastrado.');
+        } else {
+          setError('Erro ao realizar cadastro. Por favor, tente novamente.');
+        }
+      } else if (err.request) {
+        console.error('Erro na requisição:', err.request);
+        setError('Não foi possível conectar ao servidor. Verifique sua conexão.');
+      } else {
+        console.error('Erro:', err.message);
+        setError('Erro ao realizar cadastro. Por favor, tente novamente.');
+      }
     }
   };
 

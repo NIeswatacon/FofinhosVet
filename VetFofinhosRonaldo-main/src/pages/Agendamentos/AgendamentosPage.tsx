@@ -3,8 +3,8 @@ import axios from 'axios';
 import styles from './AgendamentosPage.module.css'; // Verifique o nome real do seu arquivo .css
 import NavBar from '../../components/NavBar/NavBar';
 // URLs base das APIs
-const API_AGENDAMENTOS_BASE_URL = 'http://localhost:8080'; // Seu backend local de Agendamentos
-const API_CONTAS_BASE_URL = 'http://localhost:8082/api/contas'; // Seu microserviço de Contas (AJUSTE A PORTA)
+const API_AGENDAMENTOS_BASE_URL = 'http://localhost:8080/api/agendamentos'; // Gateway
+const API_CONTAS_BASE_URL = 'http://localhost:8080/api/contas'; // Gateway
 
 const LOGGED_IN_CLIENT_ID = 1; // Exemplo: Cliente com ID 1
 

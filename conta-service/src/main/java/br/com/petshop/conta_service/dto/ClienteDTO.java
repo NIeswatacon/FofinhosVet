@@ -22,6 +22,9 @@ public class ClienteDTO {
     private String telefone;
     private String endereco;
     
+    @NotBlank(message = "A senha é obrigatória")
+    private String senha;
+    
     public Long getId() {
         return id;
     }
@@ -58,7 +61,10 @@ public class ClienteDTO {
     public void setEndereco(String endereco) {
         this.endereco = endereco;
     }
-
-    
-
+    public String getSenha() {
+        return senha;
+    }
+    public void setSenha(String senha) {
+        this.senha = senha;
+    }
 }
