@@ -1,8 +1,9 @@
+// src/pages/Pet/CadastroPet.tsx
 import React, { useState } from 'react';
 import { useNavigate } from 'react-router-dom';
 import api from '../../services/api';
 import NavBar from '../../components/NavBar/NavBar';
-import './CadastroPet.css'; // Corrigido para import local do CSS correto
+import './CadastroPet.css';
 
 interface PetData {
   nome: string;
@@ -50,12 +51,11 @@ const CadastroPet: React.FC = () => {
       const user = JSON.parse(userJson);
       const clienteId = user.id;
 
-        const response = await api.post(`/api/contas/me/pets`, formData, {
-          headers: {
-            Authorization: `Bearer ${token}`,
-            'X-User-ID': clienteId
-          }
-        });
+      const response = await api.post(`/api/contas/clientes/${clienteId}/pets`, formData, {
+  headers: {
+    Authorization: `Bearer ${token}`,
+  },
+});
 
 
       if (response.status === 201) {

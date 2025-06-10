@@ -83,6 +83,8 @@ public class ClienteController {
         }
     }
 
+
+    
     @GetMapping
     public ResponseEntity<List<ClienteDTO>> listarTodosClientes() {
         List<ClienteDTO> clientes = clienteService.listarTodosClientes().stream()
