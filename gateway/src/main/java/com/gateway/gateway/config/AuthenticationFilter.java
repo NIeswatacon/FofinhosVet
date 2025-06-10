@@ -11,12 +11,19 @@ import org.springframework.stereotype.Component;
 import org.springframework.web.server.ServerWebExchange;
 import reactor.core.publisher.Mono;
 
+import java.nio.charset.StandardCharsets;
+import java.util.List;
+
 @Component
 public class AuthenticationFilter extends AbstractGatewayFilterFactory<AuthenticationFilter.Config> {
 
-    // A mesma chave secreta do conta-service. Coloque-a no application.properties do Gateway.
     @Value("${jwt.secret}")
     private String jwtSecret;
+
+    private static final List<String> PUBLIC_ENDPOINTS = List.of(
+        "/api/contas/auth",
+        "/api/contas/clientes"
+    );
 
     public AuthenticationFilter() {
         super(Config.class);
@@ -25,49 +32,46 @@ public class AuthenticationFilter extends AbstractGatewayFilterFactory<Authentic
     @Override
     public GatewayFilter apply(Config config) {
         return (exchange, chain) -> {
-            // Verifica se a rota é pública (ex: login) e a deixa passar sem verificação.
             if (isPublicRoute(exchange)) {
                 return chain.filter(exchange);
             }
 
-            // Verifica se o cabeçalho Authorization existe.
             if (!exchange.getRequest().getHeaders().containsKey(HttpHeaders.AUTHORIZATION)) {
                 return onError(exchange, HttpStatus.UNAUTHORIZED);
             }
 
-            String authHeader = exchange.getRequest().getHeaders().get(HttpHeaders.AUTHORIZATION).get(0);
-            
-            // Verifica se o formato é "Bearer <token>".
-            if (!authHeader.startsWith("Bearer ")) {
+            String authHeader = exchange.getRequest().getHeaders().getFirst(HttpHeaders.AUTHORIZATION);
+            if (authHeader == null || !authHeader.startsWith("Bearer ")) {
                 return onError(exchange, HttpStatus.UNAUTHORIZED);
             }
 
             String token = authHeader.substring(7);
 
             try {
-                // Valida o token e extrai o ID do usuário.
-                Claims claims = Jwts.parser().setSigningKey(jwtSecret).parseClaimsJws(token).getBody();
+                Claims claims = Jwts
+                        .parserBuilder()
+                        .setSigningKey(jwtSecret.getBytes(StandardCharsets.UTF_8))
+                        .build()
+                        .parseClaimsJws(token)
+                        .getBody();
+
                 String userId = claims.getSubject();
 
-                // Injeta o ID do usuário em um novo cabeçalho para os serviços internos usarem.
                 exchange.getRequest().mutate().header("X-User-ID", userId).build();
 
             } catch (Exception e) {
-                // Se o token for inválido (expirado, assinatura incorreta, etc.).
                 return onError(exchange, HttpStatus.UNAUTHORIZED);
             }
 
-            // Se tudo estiver OK, a requisição continua para o serviço de destino.
             return chain.filter(exchange);
         };
     }
-    
-    // Método auxiliar para rotas públicas
+
     private boolean isPublicRoute(ServerWebExchange exchange) {
-        return exchange.getRequest().getURI().getPath().contains("/api/contas/auth");
+        String path = exchange.getRequest().getURI().getPath();
+        return PUBLIC_ENDPOINTS.stream().anyMatch(path::startsWith);
     }
 
-    // Método auxiliar para retornar um erro
     private Mono<Void> onError(ServerWebExchange exchange, HttpStatus status) {
         exchange.getResponse().setStatusCode(status);
         return exchange.getResponse().setComplete();

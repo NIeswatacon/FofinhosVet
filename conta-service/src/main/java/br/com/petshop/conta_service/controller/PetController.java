@@ -18,27 +18,31 @@ public class PetController {
         this.petService = petService;
     }
 
-    @GetMapping("/{petId}")
-    public ResponseEntity<Pet> buscarPetPorId(@PathVariable Long petId) {
-        return petService.buscarPetPorId(petId)
+    @GetMapping("/me/{petId}")
+    public ResponseEntity<Pet> buscarPetDoCliente(@RequestHeader("X-User-ID") String userId,
+                                                  @PathVariable Long petId) {
+        return petService.buscarPetDoClientePorId(Long.parseLong(userId), petId)
                 .map(pet -> new ResponseEntity<>(pet, HttpStatus.OK))
                 .orElse(new ResponseEntity<>(HttpStatus.NOT_FOUND));
     }
 
-    @PutMapping("/{petId}")
-    public ResponseEntity<Pet> atualizarPet(@PathVariable Long petId, @RequestBody Pet pet) {
+    @PutMapping("/me/{petId}")
+    public ResponseEntity<Pet> atualizarPetDoCliente(@RequestHeader("X-User-ID") String userId,
+                                                     @PathVariable Long petId,
+                                                     @RequestBody Pet pet) {
         try {
-            Pet petAtualizado = petService.atualizarPet(petId, pet);
-            return new ResponseEntity<>(petAtualizado, HttpStatus.OK);
+            Pet atualizado = petService.atualizarPetDoCliente(Long.parseLong(userId), petId, pet);
+            return new ResponseEntity<>(atualizado, HttpStatus.OK);
         } catch (RuntimeException e) {
             return new ResponseEntity<>(HttpStatus.NOT_FOUND);
         }
     }
 
-    @DeleteMapping("/{petId}")
-    public ResponseEntity<Void> deletarPet(@PathVariable Long petId) {
+    @DeleteMapping("/me/{petId}")
+    public ResponseEntity<Void> deletarPetDoCliente(@RequestHeader("X-User-ID") String userId,
+                                                    @PathVariable Long petId) {
         try {
-            petService.deletarPet(petId);
+            petService.deletarPetDoCliente(Long.parseLong(userId), petId);
             return new ResponseEntity<>(HttpStatus.NO_CONTENT);
         } catch (RuntimeException e) {
             return new ResponseEntity<>(HttpStatus.NOT_FOUND);

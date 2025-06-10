@@ -4,15 +4,15 @@ import br.com.petshop.conta_service.model.Cliente;
 import br.com.petshop.conta_service.service.ClienteService;
 import io.jsonwebtoken.Jwts;
 import io.jsonwebtoken.SignatureAlgorithm;
+import io.jsonwebtoken.security.Keys;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.http.ResponseEntity;
 import org.springframework.security.crypto.password.PasswordEncoder;
-import org.springframework.web.bind.annotation.PostMapping;
-import org.springframework.web.bind.annotation.RequestBody;
-import org.springframework.web.bind.annotation.RequestMapping;
-import org.springframework.web.bind.annotation.RestController;
+import org.springframework.web.bind.annotation.*;
 
+import javax.crypto.SecretKey;
+import java.nio.charset.StandardCharsets;
 import java.util.Date;
 
 record LoginRequest(String email, String senha) {}
@@ -28,12 +28,10 @@ public class AuthController {
     @Autowired
     private PasswordEncoder passwordEncoder;
 
-    // A chave secreta para assinar o token. Coloque isso no seu application.properties
     @Value("${jwt.secret}")
     private String jwtSecret;
-    
-    // Tempo de expiração do token (ex: 24 horas)
-    private final long JWT_EXPIRATION = 86400000;
+
+    private final long JWT_EXPIRATION = 86400000; // 24h
 
     @PostMapping("/login")
     public ResponseEntity<LoginResponse> login(@RequestBody LoginRequest request) {
@@ -41,20 +39,21 @@ public class AuthController {
             Cliente cliente = clienteService.buscarPorEmail(request.email());
 
             if (passwordEncoder.matches(request.senha(), cliente.getSenha())) {
+                SecretKey key = Keys.hmacShaKeyFor(jwtSecret.getBytes(StandardCharsets.UTF_8));
+
                 String token = Jwts.builder()
-                    .setSubject(Long.toString(cliente.getId())) // Colocamos o ID do cliente aqui
+                    .setSubject(Long.toString(cliente.getId()))
                     .setIssuedAt(new Date())
                     .setExpiration(new Date(System.currentTimeMillis() + JWT_EXPIRATION))
-                    .signWith(SignatureAlgorithm.HS512, jwtSecret)
+                    .signWith(key, SignatureAlgorithm.HS512)
                     .compact();
-                
+
                 return ResponseEntity.ok(new LoginResponse(token));
             }
         } catch (Exception e) {
-            // Não encontrou o usuário ou a senha não bate.
+            // log.warn("Erro na autenticação: " + e.getMessage());
         }
-        
-        // Se a autenticação falhar
+
         return ResponseEntity.status(401).build();
     }
 }

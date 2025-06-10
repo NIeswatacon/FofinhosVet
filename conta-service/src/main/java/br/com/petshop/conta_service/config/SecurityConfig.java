@@ -3,10 +3,9 @@ package br.com.petshop.conta_service.config;
 import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Configuration;
 import org.springframework.security.config.annotation.web.builders.HttpSecurity;
-import org.springframework.security.config.annotation.web.configurers.AbstractHttpConfigurer;
+import org.springframework.security.web.SecurityFilterChain;
 import org.springframework.security.crypto.bcrypt.BCryptPasswordEncoder;
 import org.springframework.security.crypto.password.PasswordEncoder;
-import org.springframework.security.web.SecurityFilterChain;
 
 @Configuration
 public class SecurityConfig {
@@ -16,17 +15,17 @@ public class SecurityConfig {
         return new BCryptPasswordEncoder();
     }
 
-    // --- BEAN ADICIONADO PARA CONFIGURAR A SEGURANÇA ---
     @Bean
-    public SecurityFilterChain securityFilterChain(HttpSecurity http) throws Exception {
+    public SecurityFilterChain filterChain(HttpSecurity http) throws Exception {
         http
-            // Desabilita a proteção CSRF, que é a causa do seu erro.
-            .csrf(AbstractHttpConfigurer::disable)
-            
+            .csrf(csrf -> csrf.disable()) // 🔥 forma moderna + explícita
+
             .authorizeHttpRequests(auth -> auth
-                // Permite TODAS as requisições para qualquer endpoint dentro do conta-service.
-                // Isso é seguro porque a autenticação real será feita no API Gateway.
-                .anyRequest().permitAll()
+                .requestMatchers(
+                    "/api/contas/auth/**",
+                    "/api/contas/clientes"
+                ).permitAll()
+                .anyRequest().authenticated()
             );
 
         return http.build();

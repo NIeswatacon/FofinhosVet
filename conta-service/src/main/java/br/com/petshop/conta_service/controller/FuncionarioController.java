@@ -20,6 +20,7 @@ public class FuncionarioController {
         this.funcionarioService = funcionarioService;
     }
 
+    // Acesso aberto (ou protegido apenas para admin, se for o caso)
     @PostMapping
     public ResponseEntity<Funcionario> criarFuncionario(@RequestBody Funcionario funcionario) {
         Funcionario novoFuncionario = funcionarioService.criarFuncionario(funcionario);
@@ -32,6 +33,36 @@ public class FuncionarioController {
         return ResponseEntity.ok(funcionarios);
     }
 
+    // Novo endpoint seguro: dados do funcionário autenticado
+    @GetMapping("/me")
+    public ResponseEntity<Funcionario> buscarFuncionarioLogado(@RequestHeader("X-User-ID") String userId) {
+        return funcionarioService.buscarFuncionarioPorId(Long.parseLong(userId))
+                .map(ResponseEntity::ok)
+                .orElse(ResponseEntity.notFound().build());
+    }
+
+    @PutMapping("/me")
+    public ResponseEntity<Funcionario> atualizarFuncionarioLogado(@RequestHeader("X-User-ID") String userId,
+                                                                   @RequestBody Funcionario funcionario) {
+        try {
+            Funcionario funcionarioAtualizado = funcionarioService.atualizarFuncionario(Long.parseLong(userId), funcionario);
+            return ResponseEntity.ok(funcionarioAtualizado);
+        } catch (RuntimeException e) {
+            return ResponseEntity.notFound().build();
+        }
+    }
+
+    @DeleteMapping("/me")
+    public ResponseEntity<Void> deletarFuncionarioLogado(@RequestHeader("X-User-ID") String userId) {
+        try {
+            funcionarioService.deletarFuncionario(Long.parseLong(userId));
+            return ResponseEntity.noContent().build();
+        } catch (RuntimeException e) {
+            return ResponseEntity.notFound().build();
+        }
+    }
+
+    // Endpoints antigos podem ser mantidos para fins administrativos
     @GetMapping("/{id}")
     public ResponseEntity<Funcionario> buscarFuncionarioPorId(@PathVariable Long id) {
         return funcionarioService.buscarFuncionarioPorId(id)

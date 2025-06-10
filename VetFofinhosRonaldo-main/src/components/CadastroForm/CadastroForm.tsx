@@ -1,5 +1,5 @@
 import React, { useState } from 'react';
-import axios from 'axios';
+import api from '../../services/api';
 import styles from './CadastroForm.module.css';
 import type { Usuario } from '../../types/Clientes/usuario';
 import { InputField } from '../InputField/InputField';
@@ -46,7 +46,7 @@ export const CadastroForm = () => {
     };
 
     // Aqui seria feito o envio, mas a lógica de try/catch ficará para depois
-    axios.post('/api/usuarios', userDataToSubmit);
+    await api.post('/api/contas/clientes', userDataToSubmit);
 
     setIsLoading(false);
   };
