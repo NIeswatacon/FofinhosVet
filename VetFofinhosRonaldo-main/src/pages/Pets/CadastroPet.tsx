@@ -2,7 +2,7 @@ import React, { useState } from 'react';
 import { useNavigate } from 'react-router-dom';
 import api from '../../services/api';
 import NavBar from '../../components/NavBar/NavBar';
-import '../Cadastro/cadastroPaga.css'; // Corrigido para o nome do arquivo CSS existente
+import './CadastroPet.css'; // Corrigido para import local do CSS correto
 
 interface PetData {
   nome: string;
@@ -18,6 +18,7 @@ const CadastroPet: React.FC = () => {
     raca: '',
     dataNascimento: '',
   });
+
   const [error, setError] = useState<string | null>(null);
   const [success, setSuccess] = useState<string | null>(null);
   const navigate = useNavigate();
@@ -32,126 +33,80 @@ const CadastroPet: React.FC = () => {
     setError(null);
     setSuccess(null);
 
-    // Validação básica
     if (!formData.nome || !formData.especie || !formData.raca || !formData.dataNascimento) {
       setError('Todos os campos são obrigatórios.');
       return;
     }
 
     try {
-      console.log('=== INÍCIO DO CADASTRO DE PET NO FRONTEND ===');
-      console.log('Dados do Pet:', formData);
+      const userJson = localStorage.getItem('user');
+      const token = localStorage.getItem('token');
 
-      const userId = localStorage.getItem('user') ? JSON.parse(localStorage.getItem('user')!).id : null;
-
-      if (!userId) {
-        setError('ID do usuário não encontrado. Por favor, faça login novamente.');
-        console.error('Erro: ID do usuário não encontrado para cadastro de pet.');
+      if (!userJson || !token) {
+        setError('Usuário não autenticado. Faça login novamente.');
         return;
       }
 
-      console.log('Enviando requisição para:', '/api/contas/clientes/me/pets');
-      const response = await api.post('/api/contas/clientes/me/pets', formData, {
+      const user = JSON.parse(userJson);
+      const clienteId = user.id;
+
+      const response = await api.post(`/api/contas/clientes/${clienteId}/pets`, formData, {
         headers: {
-          'X-User-ID': userId,
+          Authorization: `Bearer ${token}`,
         },
       });
 
-      console.log('Resposta recebida:', response.data);
-
       if (response.status === 201) {
         setSuccess('Pet cadastrado com sucesso!');
-        setFormData({ nome: '', especie: '', raca: '', dataNascimento: '', }); // Limpa o formulário
-        navigate('/clientes'); // Ou para uma página de listagem de pets
+        setFormData({ nome: '', especie: '', raca: '', dataNascimento: '' });
+        setTimeout(() => navigate('/clientes'), 1500);
       } else {
         setError('Erro ao cadastrar o pet. Tente novamente.');
-        console.error('Erro na resposta do servidor:', response.data);
       }
     } catch (err: any) {
-      console.error('=== ERRO NO CADASTRO DE PET ===');
-      console.error('Erro completo:', err);
-      if (err.response) {
-        console.error('Dados da resposta:', err.response.data);
-        console.error('Status da resposta:', err.response.status);
-        if (err.response.data && err.response.data.message) {
-          setError(err.response.data.message);
-        } else {
-          setError('Erro ao cadastrar o pet. Verifique os dados e tente novamente.');
-        }
-      } else if (err.request) {
-        setError('Erro de conexão: O servidor não respondeu.');
+      console.error('Erro ao cadastrar o pet:', err);
+      if (err.response?.data?.message) {
+        setError(err.response.data.message);
+      } else if (err.response?.status === 401) {
+        setError('Não autorizado. Faça login novamente.');
       } else {
-        setError('Erro inesperado: ' + err.message);
+        setError('Erro inesperado. Verifique os dados e tente novamente.');
       }
     }
   };
 
   return (
-    <div className="cadastro-container">
+    <div className="cadastro-pet-container">
       <NavBar />
-      <div className="cadastro-form-section">
-        <h1 className="cadastro-title">Cadastrar Novo Pet</h1>
+      <div className="cadastro-pet-form-section">
+        <h1 className="cadastro-pet-title">Cadastrar Novo Pet</h1>
         {error && <div className="error-message">{error}</div>}
         {success && <div className="success-message">{success}</div>}
-        <form onSubmit={handleSubmit} className="cadastro-form">
+        <form onSubmit={handleSubmit} className="cadastro-pet-form">
           <label htmlFor="nome">Nome do Pet</label>
-          <input
-            id="nome"
-            type="text"
-            name="nome"
-            placeholder="Nome do seu pet"
-            value={formData.nome}
-            onChange={handleChange}
-            required
-          />
+          <input type="text" id="nome" name="nome" value={formData.nome} onChange={handleChange} required />
 
           <label htmlFor="especie">Espécie</label>
-          <input
-            id="especie"
-            type="text"
-            name="especie"
-            placeholder="Ex: Cachorro, Gato, Pássaro"
-            value={formData.especie}
-            onChange={handleChange}
-            required
-          />
+          <input type="text" id="especie" name="especie" value={formData.especie} onChange={handleChange} required />
 
           <label htmlFor="raca">Raça</label>
-          <input
-            id="raca"
-            type="text"
-            name="raca"
-            placeholder="Ex: Labrador, Siamês, Calopsita"
-            value={formData.raca}
-            onChange={handleChange}
-            required
-          />
+          <input type="text" id="raca" name="raca" value={formData.raca} onChange={handleChange} required />
 
           <label htmlFor="dataNascimento">Data de Nascimento</label>
-          <input
-            id="dataNascimento"
-            type="date"
-            name="dataNascimento"
-            value={formData.dataNascimento}
-            onChange={handleChange}
-            required
-          />
+          <input type="date" id="dataNascimento" name="dataNascimento" value={formData.dataNascimento} onChange={handleChange} required />
 
           <div className="button-group">
-            <button type="submit" className="cadastro-btn">Cadastrar Pet</button>
-            <button type="button" onClick={() => navigate('/clientes')}>Voltar</button>
+            <button type="submit" className="cadastro-pet-btn">Cadastrar Pet</button>
           </div>
         </form>
       </div>
-      {/* Pode adicionar uma seção de informações de pet semelhante à de login/cadastro de usuário */}
-      <div className="cadastro-info-section">
+
+      <div className="cadastro-pet-info-section">
         <h2>Cuidar do seu pet ficou ainda mais fácil!</h2>
-        <p>
-          Adicione seu pet para gerenciar agendamentos, histórico de serviços e muito mais.
-        </p>
+        <p>Adicione seu pet para gerenciar agendamentos, histórico de serviços e muito mais.</p>
       </div>
     </div>
   );
 };
 
-export default CadastroPet; 
+export default CadastroPet;

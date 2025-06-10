@@ -1,0 +1,121 @@
+/* === Estrutura geral === */
+.cadastro-pet-container {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  padding: 3rem 1rem;
+  background-color: #f1f3f5;
+  min-height: 100vh;
+  font-family: 'Segoe UI', sans-serif;
+}
+
+/* === Formulário === */
+.cadastro-pet-form-section {
+  background: #ffffff;
+  border-radius: 10px;
+  padding: 2rem;
+  width: 100%;
+  max-width: 550px;
+  box-shadow: 0 4px 20px rgba(0, 0, 0, 0.1);
+}
+
+.cadastro-pet-title {
+  text-align: center;
+  font-size: 2rem;
+  color: #2c3e50;
+  margin-bottom: 1.5rem;
+}
+
+.cadastro-pet-form label {
+  display: block;
+  margin-bottom: 0.4rem;
+  font-weight: 600;
+  color: #34495e;
+}
+
+.cadastro-pet-form input {
+  width: 100%;
+  padding: 0.7rem;
+  border: 1px solid #d0d7de;
+  border-radius: 6px;
+  margin-bottom: 1.2rem;
+  font-size: 1rem;
+  box-sizing: border-box;
+  transition: border-color 0.2s;
+}
+
+.cadastro-pet-form input:focus {
+  border-color: #4c8bf5;
+  outline: none;
+}
+
+/* === Botões === */
+.button-group {
+  display: flex;
+  justify-content: space-between;
+  gap: 1rem;
+  margin-top: 1rem;
+}
+
+.cadastro-pet-btn,
+.voltar-btn {
+  flex: 1;
+  padding: 0.75rem;
+  border: none;
+  border-radius: 6px;
+  font-size: 1rem;
+  font-weight: 600;
+  cursor: pointer;
+  transition: background-color 0.2s ease;
+}
+
+.cadastro-pet-btn {
+  background-color: #4c8bf5;
+  color: white;
+}
+
+.cadastro-pet-btn:hover {
+  background-color: #346fd0;
+}
+
+.voltar-btn {
+  background-color: #ced4da;
+  color: #212529;
+}
+
+.voltar-btn:hover {
+  background-color: #adb5bd;
+}
+
+/* === Mensagens === */
+.success-message,
+.error-message {
+  text-align: center;
+  padding: 0.75rem;
+  border-radius: 6px;
+  margin-bottom: 1rem;
+  font-weight: 500;
+}
+
+.success-message {
+  background-color: #d1e7dd;
+  color: #0f5132;
+}
+
+.error-message {
+  background-color: #f8d7da;
+  color: #842029;
+}
+
+/* === Seção extra === */
+.cadastro-pet-info-section {
+  text-align: center;
+  margin-top: 2rem;
+  max-width: 600px;
+  color: #495057;
+}
+
+.cadastro-pet-info-section h2 {
+  font-size: 1.4rem;
+  margin-bottom: 0.5rem;
+}
