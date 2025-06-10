@@ -26,7 +26,7 @@ const CardProdutoCarrinho: React.FC<CardProdutoCarrinhoProps> = ({ item, idClien
       return;
     }
 
-    const apiBaseUrl = 'http://localhost:8080/api/vendas';
+    const apiBaseUrl = import.meta.env.VITE_API_BASE_URL || 'http://localhost:8080/api/vendas';
     let endpoint = '';
     let payload: any = {}; // Usar 'any' temporariamente ou definir tipos mais flexíveis
     const requestConfig: import('axios').AxiosRequestConfig = {
