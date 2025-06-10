@@ -58,6 +58,14 @@ public class CartaoController {
         return new ResponseEntity<>(toDTO(novoCartao), HttpStatus.CREATED);
     }
 
+    @GetMapping
+    public ResponseEntity<List<CartaoDTO>> listarCartoesPorUsuarioLogado(@RequestHeader("X-User-ID") Long idUsuario) {
+        List<CartaoDTO> cartoes = cartaoRepository.findByIdUsuario(idUsuario).stream()
+                .map(this::toDTO)
+                .collect(Collectors.toList());
+        return ResponseEntity.ok(cartoes);
+    }
+
     @GetMapping("/usuario/{idUsuario}")
     public ResponseEntity<List<CartaoDTO>> buscarPorIdUsuario(@PathVariable Long idUsuario) {
         List<CartaoDTO> cartoes = cartaoRepository.findByIdUsuario(idUsuario).stream()

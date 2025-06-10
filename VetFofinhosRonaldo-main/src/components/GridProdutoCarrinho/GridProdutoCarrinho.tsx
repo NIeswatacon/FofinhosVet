@@ -18,11 +18,9 @@ const GridProdutosCarrinho: React.FC<GridProdutosCarrinhoProps> = ({ itens, idCl
     <div>
       {itens.map((item, index) => ( // Adiciona o 'index' à função de mapeamento
         <CardProdutoCarrinho
-          // Usa uma chave composta para garantir unicidade se idProduto puder ser duplicado.
-          key={`${item.idProduto}-${index}`}
+          key={item.idProduto} // idProduto deve ser único no carrinho
           item={item}
           idCliente={idCliente} // Correção: Usar a prop idCliente recebida
-
           onCarrinhoAtualizado={onCarrinhoAtualizado}
         />
       ))}

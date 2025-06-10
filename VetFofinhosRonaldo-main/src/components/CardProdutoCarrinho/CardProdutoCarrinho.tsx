@@ -27,21 +27,24 @@ const CardProdutoCarrinho: React.FC<CardProdutoCarrinhoProps> = ({ item, idClien
     }
 
     const apiBaseUrl = 'http://localhost:8080/api/vendas';
-    let payload: AdicionarAoCarrinhoPayload | RemoverDoCarrinhoPayload = {
-      idCliente,
-      idProduto: item.idProduto, // Corrigido para usar item.idProduto
-      quantidade: Math.abs(incremento), // Usar o valor absoluto do incremento para a quantidade
-    };
+    let endpoint = '';
+    let payload: any = {}; // Usar 'any' temporariamente ou definir tipos mais flexíveis
+    const requestConfig: import('axios').AxiosRequestConfig = {
+      headers: { 'X-User-ID': idCliente.toString() }
+    }; 
 
-    let endpoint = `${apiBaseUrl}/carrinho/adicionar`;
-    const requestConfig: import('axios').AxiosRequestConfig = {}; // Usar AxiosRequestConfig
     if (incremento < 0) { // Diminuindo
       endpoint = `${apiBaseUrl}/carrinho/remover`;
-      // O payload para remover/diminuir quantidade espera a quantidade a ser diminuida.
-      // Se for para diminuir 1, payload.quantidade = 1.
+      payload = {
+        idProduto: item.idProduto,
+        quantidade: Math.abs(incremento), // Quantidade a ser diminuída
+      };
     } else { // Aumentando
-            requestConfig.headers = { 'x-user-id': idCliente.toString() };
-
+      endpoint = `${apiBaseUrl}/carrinho/adicionar`;
+      payload = {
+        idProduto: item.idProduto,
+        quantidade: incremento,
+      };
     }
 
     console.log('[CardProdutoCarrinho] Tentando alterar quantidade. Endpoint:', endpoint, 'Payload:', payload);
@@ -77,10 +80,16 @@ const CardProdutoCarrinho: React.FC<CardProdutoCarrinhoProps> = ({ item, idClien
     if (isUpdating && (item.quantidade + (-1) > 0)) return; // Evita setar se já está em progresso por outra ação
     setIsUpdating(true);
 
-    const payload: RemoverDoCarrinhoPayload = { idCliente, idProduto: item.idProduto };
+    // Para remover completamente, não enviamos 'quantidade' no payload,
+    // ou a API deve interpretar 'quantidade' ausente como remoção total.
+    const payload = { idProduto: item.idProduto };
     console.log('[CardProdutoCarrinho] Tentando remover item completamente. Payload:', payload);
     try {
-      const response = await axios.post<ApiResponse<CarrinhoDetalhado>>(`http://localhost:8080/api/vendas/carrinho/remover`, payload);
+      const response = await axios.post<ApiResponse<CarrinhoDetalhado>>(
+        `http://localhost:8080/api/vendas/carrinho/remover`,
+        payload,
+        { headers: { 'X-User-ID': idCliente.toString() } } // Adicionar header X-User-ID
+      );
       const result = response.data;
       if (result.success) { // A API pode retornar data: null se o carrinho for removido
         console.log('[CardProdutoCarrinho] Item removido com sucesso:', result.data);

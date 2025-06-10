@@ -2,31 +2,30 @@ import { Request, Response, NextFunction } from 'express';
 import type { Carrinho } from '../types/carrinho/carrinho';
 import type { ItemCarrinho } from '../types/carrinho/itemCarrinho';
 import { pool } from '../database'; // Importar o pool de conexões
-import { RowDataPacket, ResultSetHeader } from 'mysql2';
+import { RowDataPacket, ResultSetHeader, PoolConnection } from 'mysql2/promise';
 import type { ProdutoBase } from '../types/produtos/produtoBase'; // Assumindo que ProdutoBase tem nome e preco
 
 // Função auxiliar para calcular e atualizar o total do carrinho
-async function atualizarTotalCarrinho(idCarrinho: number): Promise<number> {
-  const [itensResult] = await pool.execute<RowDataPacket[] & { quantidade: number; preco: number }[]>(
+async function atualizarTotalCarrinho(connection: PoolConnection, idCarrinho: number): Promise<number> {
+  const [itensResult] = await connection.execute<RowDataPacket[] & { quantidade: number; preco: number }[]>(
     `SELECT ic.quantidade, pb.preco 
      FROM ItemCarrinho ic
      JOIN ProdutoBase pb ON ic.idProduto = pb.id
      WHERE ic.idCarrinho = ?`,
     [idCarrinho]
   );
-
+ 
   const novoTotal = itensResult.reduce((sum, item) => sum + (item.quantidade * item.preco), 0);
-
-  await pool.execute(
+ 
+  await connection.execute(
     `UPDATE Carrinho SET total = ?, dataUltimaModificacao = NOW() WHERE idCarrinho = ?`,
     [novoTotal, idCarrinho]
   );
   return novoTotal;
 }
-
 // Função auxiliar para buscar e formatar os detalhes completos do carrinho
-async function obterDetalhesCarrinhoFormatado(idCarrinho: number): Promise<{ carrinho: Carrinho | null, itens: (ItemCarrinho & { nome: string; preco: number })[] }> {
-  const [carrinhoRows] = await pool.execute<RowDataPacket[] & Carrinho[]>(
+async function obterDetalhesCarrinhoFormatado(connection: PoolConnection | typeof pool, idCarrinho: number): Promise<{ carrinho: Carrinho | null, itens: (ItemCarrinho & { nome: string; preco: number })[] }> {
+  const [carrinhoRows] = await connection.execute<RowDataPacket[] & Carrinho[]>(
     `SELECT idCarrinho, idUsuario, total, dataCriacao, dataUltimaModificacao 
      FROM Carrinho WHERE idCarrinho = ?`,
     [idCarrinho]
@@ -37,7 +36,7 @@ async function obterDetalhesCarrinhoFormatado(idCarrinho: number): Promise<{ car
   }
   const carrinho = carrinhoRows[0];
 
-  const [itensDB] = await pool.execute<RowDataPacket[] & { idProduto: number; quantidade: number; preco: number; nome_produto: string; }[]>(
+  const [itensDB] = await connection.execute<RowDataPacket[] & { idProduto: number; quantidade: number; preco: number; nome_produto: string; }[]>(
     `SELECT
         ic.idProduto as idProduto,
 
@@ -90,7 +89,7 @@ export const listarProdutosDoCarrinho = async (req: Request, res: Response, next
 
     const idCarrinho = carrinhosResult[0].idCarrinho;
 
-    const { carrinho, itens } = await obterDetalhesCarrinhoFormatado(idCarrinho);
+    const { carrinho, itens } = await obterDetalhesCarrinhoFormatado(pool, idCarrinho);
 
     if (!carrinho) {
       res.status(404).json({ success: false, message: 'Carrinho não encontrado após verificação inicial.' });
@@ -107,9 +106,9 @@ export const listarProdutosDoCarrinho = async (req: Request, res: Response, next
 // @desc    Adiciona um produto ao carrinho ou atualiza sua quantidade
 // @access  Private
 export const adicionarProdutoAoCarrinho = async (req: Request, res: Response, next: NextFunction): Promise<void> => {
+  let connection: PoolConnection | null = null;
   try {
     const idUsuarioLogado = req.headers['x-user-id'] as string | undefined;
-
     const { idProduto, quantidade } = req.body as { idProduto: number, quantidade: number };
 
     if (!idUsuarioLogado) {
@@ -129,9 +128,11 @@ export const adicionarProdutoAoCarrinho = async (req: Request, res: Response, ne
       return;
     }
 
+    connection = await pool.getConnection();
+    await connection.beginTransaction();
+
     // 1. Buscar informações do produto no banco de dados
-    const [rows] = await pool.execute<RowDataPacket[] & ProdutoBase[]>(
-      // Selecionar todos os campos para alinhar com o tipo ProdutoBase, assumindo que ProdutoBase.id é a PK
+    const [rows] = await connection.execute<RowDataPacket[] & ProdutoBase[]>(
       `SELECT id, nome, preco, tipo, descricao FROM ProdutoBase WHERE id = ?`,
       [idProduto]
     );
@@ -142,11 +143,10 @@ export const adicionarProdutoAoCarrinho = async (req: Request, res: Response, ne
       res.status(404).json({ success: false, message: 'Produto não encontrado.' });
       return;
     }
-    const precoProdutoNoMomento = produtoInfo.preco;
 
     // 2. Encontrar ou criar o carrinho para o cliente
     let idCarrinho: number;
-    const [carrinhosResult] = await pool.execute<RowDataPacket[] & { idCarrinho: number }[]>(
+    const [carrinhosResult] = await connection.execute<RowDataPacket[] & { idCarrinho: number }[]>(
       `SELECT idCarrinho FROM Carrinho WHERE idUsuario = ?`,
       [idCliente]
     );
@@ -156,7 +156,7 @@ export const adicionarProdutoAoCarrinho = async (req: Request, res: Response, ne
 
     } else {
       // Criar um novo carrinho
-      const [insertResult] = await pool.execute<ResultSetHeader>(
+      const [insertResult] = await connection.execute<ResultSetHeader>(
         `INSERT INTO Carrinho (idUsuario, dataCriacao, dataUltimaModificacao, total) VALUES (?, NOW(), NOW(), 0)`,
         [idCliente]
       );
@@ -165,28 +165,34 @@ export const adicionarProdutoAoCarrinho = async (req: Request, res: Response, ne
 
     // 3. Adicionar ou atualizar o item no carrinho
     // Usamos INSERT ... ON DUPLICATE KEY UPDATE para simplificar
-    await pool.execute(
+    await connection.execute(
       `INSERT INTO ItemCarrinho (idCarrinho, idProduto, quantidade)
        VALUES (?, ?, ?)
        ON DUPLICATE KEY UPDATE quantidade = quantidade + VALUES(quantidade)`,
       [idCarrinho, idProduto, quantidade]
     );
-
+ 
     // 4. Atualizar o total do carrinho
-    await atualizarTotalCarrinho(idCarrinho);
-
+    await atualizarTotalCarrinho(connection, idCarrinho);
+ 
     // 5. Buscar o carrinho atualizado para retornar na resposta
-    const { carrinho: carrinhoAtualizado, itens: itensFormatados } = await obterDetalhesCarrinhoFormatado(idCarrinho);
-
+    const { carrinho: carrinhoAtualizado, itens: itensFormatados } = await obterDetalhesCarrinhoFormatado(connection, idCarrinho);
+ 
+    await connection.commit();
+ 
     if (!carrinhoAtualizado) {
+      // Isso não deveria acontecer se a transação foi bem-sucedida
       res.status(500).json({ success: false, message: 'Erro ao buscar carrinho atualizado.' });
       return;
     }
-
+ 
     res.status(200).json({ success: true, message: 'Produto adicionado/atualizado no carrinho!', data: { ...carrinhoAtualizado, itens: itensFormatados } });
   } catch (err: any) {
+    if (connection) await connection.rollback();
     console.error("Erro ao adicionar produto ao carrinho:", err);
     next(err);
+  } finally {
+    if (connection) connection.release();
   }
 };
 
@@ -194,6 +200,7 @@ export const adicionarProdutoAoCarrinho = async (req: Request, res: Response, ne
 // @desc    Remove um produto do carrinho ou diminui sua quantidade
 // @access  Private
 export const removerProdutoDoCarrinho = async (req: Request, res: Response, next: NextFunction): Promise<void> => {
+  let connection: PoolConnection | null = null;
   try {
     const idUsuarioLogado = req.headers['x-user-id'] as string | undefined;
     const { idProduto, quantidade: quantidadeParaRemover } = req.body as { idProduto: number, quantidade?: number };
@@ -215,8 +222,11 @@ export const removerProdutoDoCarrinho = async (req: Request, res: Response, next
       return;
     }
 
+    connection = await pool.getConnection();
+    await connection.beginTransaction();
+
     // 1. Encontrar o carrinho do cliente
-    const [carrinhosResult] = await pool.execute<RowDataPacket[] & { idCarrinho: number }[]>(
+    const [carrinhosResult] = await connection.execute<RowDataPacket[] & { idCarrinho: number }[]>(
       `SELECT idCarrinho FROM Carrinho WHERE idUsuario = ?`,
       [idCliente]
     );
@@ -227,9 +237,8 @@ export const removerProdutoDoCarrinho = async (req: Request, res: Response, next
     }
     const idCarrinho = carrinhosResult[0].idCarrinho;
 
-
     // 2. Verificar se o item existe no carrinho e obter sua quantidade atual
-    const [itensCarrinho] = await pool.execute<RowDataPacket[] & { quantidade: number }[]>(
+    const [itensCarrinho] = await connection.execute<RowDataPacket[] & { quantidade: number }[]>(
       `SELECT quantidade FROM ItemCarrinho WHERE idCarrinho = ? AND idProduto = ?`,
       [idCarrinho, idProduto]
     );
@@ -243,29 +252,34 @@ export const removerProdutoDoCarrinho = async (req: Request, res: Response, next
     // 3. Lógica para remover ou atualizar a quantidade
     if (quantidadeParaRemover === undefined || quantidadeParaRemover >= quantidadeAtual) {
       // Remover o item completamente
-      await pool.execute(
+      await connection.execute(
         `DELETE FROM ItemCarrinho WHERE idCarrinho = ? AND idProduto = ?`,
         [idCarrinho, idProduto]
       );
     } else {
       // Diminuir a quantidade
       const novaQuantidade = quantidadeAtual - quantidadeParaRemover;
-      await pool.execute(
+      await connection.execute(
         `UPDATE ItemCarrinho SET quantidade = ? WHERE idCarrinho = ? AND idProduto = ?`,
         [novaQuantidade, idCarrinho, idProduto]
       );
     }
-
+ 
     // 4. Atualizar o total do carrinho
-    await atualizarTotalCarrinho(idCarrinho);
-
+    await atualizarTotalCarrinho(connection, idCarrinho);
+ 
     // 5. Buscar o carrinho atualizado para retornar na resposta
-    const { carrinho: carrinhoAtualizado, itens: itensFormatados } = await obterDetalhesCarrinhoFormatado(idCarrinho);
-
+    const { carrinho: carrinhoAtualizado, itens: itensFormatados } = await obterDetalhesCarrinhoFormatado(connection, idCarrinho);
+ 
+    await connection.commit();
+ 
     // Mesmo que o carrinhoAtualizado seja null (improvável aqui), a estrutura da resposta será mantida
     res.status(200).json({ success: true, message: 'Produto removido/atualizado do carrinho!', data: carrinhoAtualizado ? { ...carrinhoAtualizado, itens: itensFormatados } : null });
   } catch (err: any) {
+    if (connection) await connection.rollback();
     console.error("Erro ao remover produto do carrinho:", err);
     next(err);
+  } finally {
+    if (connection) connection.release();
   }
 };
