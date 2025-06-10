@@ -63,12 +63,16 @@ async function obterDetalhesCarrinhoFormatado(connection: PoolConnection | typeo
 // @desc    Lista todos os produtos no carrinho do usuário (mockado)
 // @access  Private (geralmente requer autenticação para saber qual carrinho buscar)
 export const listarProdutosDoCarrinho = async (req: Request, res: Response, next: NextFunction): Promise<void> => {
+  // Log para verificar todos os cabeçalhos recebidos
+  console.log('[listarProdutosDoCarrinho] Headers recebidos:', JSON.stringify(req.headers, null, 2));
   const idUsuarioLogado = req.headers['x-user-id'] as string | undefined;
-
+  
+  console.log('[listarProdutosDoCarrinho] Valor de X-User-ID lido:', idUsuarioLogado);
   if (!idUsuarioLogado) {
     res.status(403).json({ success: false, message: 'ID do usuário não fornecido no cabeçalho X-User-ID.' });
     return;
   }
+  
 
   const idCliente = parseInt(idUsuarioLogado);
 
