@@ -44,7 +44,7 @@ const CartaoComponent: React.FC = () => {
     cvv: '',
     tipoCartao: TipoCartao.CREDITO,
     cpfTitular: '',
-    idUsuario: 1, // Simulação, normalmente vem do contexto
+    idUsuario: 0, // Será preenchido com o ID do usuário logado
   });
   const [formTouched, setFormTouched] = useState(false);
   const [formError, setFormError] = useState('');
@@ -54,15 +54,42 @@ const CartaoComponent: React.FC = () => {
   const navigate = useNavigate();
 
   useEffect(() => {
-    fetchCartoes();
-  }, []);
+    // Obter ID do usuário do localStorage
+    const userStr = localStorage.getItem('user');
+    if (userStr) {
+      try {
+        const user = JSON.parse(userStr);
+        if (user.id) {
+          setForm(prev => ({ ...prev, idUsuario: user.id }));
+        }
+      } catch (e) {
+        console.error('Erro ao parsear dados do usuário:', e);
+        setFormError('Erro ao carregar dados do usuário. Por favor, faça login novamente.');
+      }
+    } else {
+      setFormError('Usuário não encontrado. Por favor, faça login novamente.');
+      navigate('/login');
+    }
+  }, [navigate]);
+
+  useEffect(() => {
+    if (form.idUsuario) {
+      fetchCartoes();
+    }
+  }, [form.idUsuario]);
 
   const fetchCartoes = async () => {
+    if (!form.idUsuario) {
+      setFormError('ID do usuário não encontrado. Por favor, faça login novamente.');
+      return;
+    }
+
     setLoading(true);
     try {
       const lista = await cartaoService.listarCartoes();
       setCartoes(lista);
     } catch (e) {
+      console.error('Erro ao carregar cartões:', e);
       setFormError('Erro ao carregar cartões. Tente novamente.');
     } finally {
       setLoading(false);
@@ -116,7 +143,7 @@ const CartaoComponent: React.FC = () => {
       console.log('Enviando para o backend:', payload);
       await cartaoService.criarCartao(payload);
       setSuccessMsg('Cartão cadastrado com sucesso!');
-      setForm({ numeroCartao: '', nomeTitular: '', dataValidade: '', cvv: '', tipoCartao: tab, cpfTitular: '', idUsuario: 1 });
+      setForm({ numeroCartao: '', nomeTitular: '', dataValidade: '', cvv: '', tipoCartao: tab, cpfTitular: '', idUsuario: 0 });
       fetchCartoes();
       navigate('/pagamento');
     } catch (e) {
