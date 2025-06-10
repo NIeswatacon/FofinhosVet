@@ -10,6 +10,7 @@ import unifor.pagamento.pagamento.model.StatusPagamento;
 
 import java.util.List;
 
+@CrossOrigin(origins = "http://localhost:5173") // Permite CORS para o frontend
 @RestController
 @RequestMapping("/api/pagamentos")
 public class PagamentoController {

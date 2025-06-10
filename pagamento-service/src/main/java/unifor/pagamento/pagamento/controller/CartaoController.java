@@ -13,6 +13,7 @@ import unifor.pagamento.pagamento.Service.UsuarioService;
 import java.util.List;
 import java.util.stream.Collectors;
 
+@CrossOrigin(origins = "http://localhost:5173")
 @RestController
 @RequestMapping("/api/cartoes")
 public class CartaoController {
