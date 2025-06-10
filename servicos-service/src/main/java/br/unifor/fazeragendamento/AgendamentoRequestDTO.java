@@ -7,7 +7,6 @@ import java.time.LocalDate;
 public class AgendamentoRequestDTO {
 
     // IDs para validação nos outros serviços
-    private Long idCliente;
     private Long idPet;
     private Long idFuncionario;
 
@@ -17,14 +16,6 @@ public class AgendamentoRequestDTO {
     private String nomeFuncionario;
 
     // Getters e Setters
-
-    public Long getIdCliente() {
-        return idCliente;
-    }
-
-    public void setIdCliente(Long idCliente) {
-        this.idCliente = idCliente;
-    }
 
     public Long getIdPet() {
         return idPet;

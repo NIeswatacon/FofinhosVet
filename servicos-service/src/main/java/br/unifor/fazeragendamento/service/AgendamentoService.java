@@ -25,7 +25,7 @@ public class AgendamentoService {
     @Autowired
     public AgendamentoService(AgendamentoRepository agendamentoRepository, WebClient.Builder webClientBuilder) {
         this.agendamentoRepository = agendamentoRepository;
-        this.webClientContas = webClientBuilder.baseUrl("http://CONTA/api/contas").build();
+        this.webClientContas = webClientBuilder.baseUrl("http://conta-service/api/contas").build();
     }
 
     public Agendamento criarAgendamento(Long userId, AgendamentoRequestDTO dto) { 
@@ -91,4 +91,9 @@ public class AgendamentoService {
         logger.info("Buscando agendamentos pendentes para o cliente ID: {}", clienteId);
         return agendamentoRepository.findByClienteIdAndStatusPagamento(clienteId, Agendamento.StatusPagamento.PENDENTE);
     }
+
+    public List<Agendamento> listarAgendamentosPorCliente(Long clienteId) {
+    logger.info("Buscando todos os agendamentos para o cliente ID: {}", clienteId);
+    return agendamentoRepository.findByClienteId(clienteId);
+}
 }

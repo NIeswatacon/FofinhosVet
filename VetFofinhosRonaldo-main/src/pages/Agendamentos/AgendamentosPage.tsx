@@ -77,23 +77,22 @@ export const AgendamentosPage = () => {
   }, []); // Executa apenas uma vez na montagem para buscar o ID
 
   const fetchAgendamentos = async () => {
-    if (!loggedInCliente) return;
-    setIsLoading(true);
-    setError(null);
-    try {
-        // O backend local de agendamentos lista todos. Filtramos no frontend.
-      const response = await axios.get<Agendamento[]>(`${API_AGENDAMENTOS_BASE_URL}/agendamentos`);
-      const agendamentosDoCliente = response.data.filter(
-        ag => ag.nomeCliente === loggedInCliente.nome
-      );
-      setAgendamentos(agendamentosDoCliente);
-    } catch (err) {
-      setError('Falha ao buscar agendamentos.');
-      console.error(err);
-    } finally {
-      setIsLoading(false);
-    }
-  };
+  // A verificação do loggedInCliente já garante que teremos o ID.
+  if (!loggedInCliente) return;
+
+  setIsLoading(true);
+  setError(null);
+  try {
+    // Usando o novo endpoint otimizado do backend
+    const response = await axios.get<Agendamento[]>(`${API_AGENDAMENTOS_BASE_URL}/cliente/${loggedInCliente.id}`);
+    setAgendamentos(response.data);
+  } catch (err) {
+    setError('Falha ao buscar agendamentos.');
+    console.error(err);
+  } finally {
+    setIsLoading(false);
+  }
+};
 
     const fetchLoggedInClienteData = async (id: number) => {
     if (!id) {
@@ -190,7 +189,6 @@ export const AgendamentosPage = () => {
     }
 
     const payload = {
-      idCliente: loggedInCliente.id,
       idPet: parseInt(selectedPetIdForDropdown, 10),
       servico: formData.servico,
       data: formData.data,
@@ -198,7 +196,7 @@ export const AgendamentosPage = () => {
     };
 
     try {
-      await axios.post(`${API_AGENDAMENTOS_BASE_URL}/agendamentos`, payload,{ headers: {
+      await axios.post(API_AGENDAMENTOS_BASE_URL, payload,{ headers: {
       'X-User-ID': loggedInCliente.id.toString(),
       },
     });
@@ -232,89 +230,103 @@ export const AgendamentosPage = () => {
 
   if (!clienteIdFromAuth && !isLoading) { // Se não há ID e não está carregando
     // Mensagem para o usuário fazer login ou erro se o ID não foi encontrado
-    return <div className={styles.container}><p className={styles.errorMessage}>{error || "Por favor, faça login para ver seus agendamentos."}</p></div>;
+    return (
+    <div className={styles.container}>
+      <p className={styles.errorMessage}>
+        {error || "Por favor, faça login para ver seus agendamentos."}
+        </p>
+      </div>
+    );
   }
 
 
-  return (
-    <div>
-      <NavBar />
-      <div className={styles.container}>
-        <header className={styles.header}>
-          <h1>Agendamentos</h1>
-          <p>Gerencie os agendamentos para o cliente: <strong>{loggedInCliente.nome}</strong> (CPF: {loggedInCliente.cpf || 'N/A'})</p>
-        </header>
+return (
+  <div>
+    <NavBar />
+    <div className={styles.container}>
+      {/* Renderiza o header e o main apenas se loggedInCliente não for null */}
+      {loggedInCliente ? (
+        // O React Fragment <> deve envolver todo o conteúdo condicional
+        <>
+          <header className={styles.header}>
+            <h1>Agendamentos</h1>
+            <p>Gerencie os agendamentos para o cliente: <strong>{loggedInCliente.nome}</strong> (CPF: {loggedInCliente.cpf || 'N/A'})</p>
+          </header>
 
-        <main className={styles.mainContent}>
-          <section className={styles.section}>
-            <h2>Novo Agendamento para {loggedInCliente.nome}</h2>
-            <form onSubmit={handleSubmit} className={styles.form}>
-              <div className={styles.formGroup}>
-                <label htmlFor="selectedPetParaAgendamento">Pet:</label>
-                <select
-                  name="selectedPetParaAgendamento"
-                  id="selectedPetParaAgendamento"
-                  value={selectedPetIdForDropdown}
-                  onChange={handlePetSelectChange}
-                  required
-                  disabled={pets.length === 0 || !loggedInCliente}
-                >
-                  <option value="" disabled>{pets.length === 0 ? "Nenhum pet cadastrado" : "Selecione um pet"}</option>
-                  {pets.map(pet => (
-                    <option key={pet.id} value={pet.id.toString()}>{pet.nome} (Espécie: {pet.especie || 'N/A'})</option>
+          <main className={styles.mainContent}>
+            <section className={styles.section}>
+              <h2>Novo Agendamento para {loggedInCliente.nome}</h2>
+              <form onSubmit={handleSubmit} className={styles.form}>
+                <div className={styles.formGroup}>
+                  <label htmlFor="selectedPetParaAgendamento">Pet:</label>
+                  <select
+                    name="selectedPetParaAgendamento"
+                    id="selectedPetParaAgendamento"
+                    value={selectedPetIdForDropdown}
+                    onChange={handlePetSelectChange}
+                    required
+                    disabled={pets.length === 0 || !loggedInCliente}
+                  >
+                    <option value="" disabled>{pets.length === 0 ? "Nenhum pet cadastrado" : "Selecione um pet"}</option>
+                    {pets.map(pet => (
+                      <option key={pet.id} value={pet.id.toString()}>{pet.nome} (Espécie: {pet.especie || 'N/A'})</option>
+                    ))}
+                  </select>
+                </div>
+                <div className={styles.formGroup}>
+                  <label htmlFor="servico">Serviço:</label>
+                  <select name="servico" id="servico" value={formData.servico} onChange={handleInputChange} required>
+                    {Object.values(ServicoEnumFrontend).map(s => (
+                      <option key={s} value={s}>{s.charAt(0) + s.slice(1).toLowerCase()}</option>
+                    ))}
+                  </select>
+                </div>
+                <div className={styles.formGroup}>
+                  <label htmlFor="dataHoraInput">Data e Hora:</label>
+                  <input type="datetime-local" name="dataHoraInput" id="dataHoraInput" value={formData.dataHoraInput} onChange={handleInputChange} required />
+                </div>
+                <div className={styles.formGroup}>
+                  <label htmlFor="nomeFuncionario">Funcionário (opcional):</label>
+                  <input type="text" name="nomeFuncionario" id="nomeFuncionario" value={formData.nomeFuncionario} onChange={handleInputChange} />
+                </div>
+                <button type="submit" className={styles.submitButton} disabled={isSubmitting}>
+                  {isSubmitting ? 'Agendando...' : 'Agendar'}
+                </button>
+                {successMessage && <p className={styles.successMessage}>{successMessage}</p>}
+                {error && <p className={styles.errorMessage}>{error}</p>}
+              </form>
+            </section>
+
+            <section className={styles.section}>
+              <h2>Próximos Agendamentos</h2>
+              {isLoading && agendamentos.length === 0 && <p>Carregando agendamentos...</p>}
+              {error && !isLoading && agendamentos.length === 0 && <p className={styles.errorMessage}>{error.includes("agendamentos") || error.includes("cliente") ? error : "Falha ao carregar agendamentos."}</p>}
+              {!isLoading && !error && agendamentos.length === 0 && <p>Nenhum agendamento encontrado.</p>}
+              {!isLoading && !error && agendamentos.length > 0 && (
+                <ul className={styles.appointmentList}>
+                  {agendamentos.map(ag => (
+                    <li key={ag.id} className={styles.appointmentItem}>
+                      <div><strong>Pet:</strong> {ag.nomePet}</div>
+                      <div><strong>Serviço:</strong> {ag.servico}</div>
+                      <div><strong>Data:</strong> {new Date(ag.data + 'T00:00:00').toLocaleDateString('pt-BR')}</div>
+                      {ag.nomeFuncionario && <div><strong>Funcionário:</strong> {ag.nomeFuncionario}</div>}
+                      {ag.valorServico && <div><strong>Valor:</strong> R$ {ag.valorServico.toFixed(2)}</div>}
+                    </li>
                   ))}
-                </select>
-              </div>
-              <div className={styles.formGroup}>
-                <label htmlFor="servico">Serviço:</label>
-                <select name="servico" id="servico" value={formData.servico} onChange={handleInputChange} required>
-                  {Object.values(ServicoEnumFrontend).map(s => (
-                    <option key={s} value={s}>{s.charAt(0) + s.slice(1).toLowerCase()}</option>
-                  ))}
-                </select>
-              </div>
-              <div className={styles.formGroup}>
-                <label htmlFor="dataHoraInput">Data e Hora:</label>
-                <input type="datetime-local" name="dataHoraInput" id="dataHoraInput" value={formData.dataHoraInput} onChange={handleInputChange} required />
-              </div>
-              <div className={styles.formGroup}>
-                <label htmlFor="nomeFuncionario">Funcionário (opcional):</label>
-                <input type="text" name="nomeFuncionario" id="nomeFuncionario" value={formData.nomeFuncionario} onChange={handleInputChange} />
-              </div>
-              <button type="submit" className={styles.submitButton} disabled={isSubmitting}>
-                {isSubmitting ? 'Agendando...' : 'Agendar'}
-              </button>
-              {successMessage && <p className={styles.successMessage}>{successMessage}</p>}
-              {error && <p className={styles.errorMessage}>{error}</p>}
-            </form>
-          </section>
+                </ul>
+              )}
+            </section>
+          </main>
+        </>
+      ) : (
+        // Bloco "else" da condição, executado se loggedInCliente for nulo
+        <p>Carregando dados do cliente...</p>
+      )}
 
-          <section className={styles.section}>
-            <h2>Próximos Agendamentos</h2>
-            {isLoading && agendamentos.length === 0 && <p>Carregando agendamentos...</p>}
-            {error && !isLoading && agendamentos.length === 0 && <p className={styles.errorMessage}>{error.includes("agendamentos") || error.includes("cliente") ? error : "Falha ao carregar agendamentos."}</p>}
-            {!isLoading && !error && agendamentos.length === 0 && <p>Nenhum agendamento encontrado.</p>}
-            {!isLoading && !error && agendamentos.length > 0 && (
-              <ul className={styles.appointmentList}>
-                {agendamentos.map(ag => (
-                  <li key={ag.id} className={styles.appointmentItem}>
-                    <div><strong>Pet:</strong> {ag.nomePet}</div>
-                    <div><strong>Serviço:</strong> {ag.servico}</div>
-                    {/* Backend envia 'data' como YYYY-MM-DD. Adicionamos T00:00:00 para evitar problemas de fuso ao converter para Date */}
-                    <div><strong>Data:</strong> {new Date(ag.data + 'T00:00:00').toLocaleDateString('pt-BR')}</div>
-                    {ag.nomeFuncionario && <div><strong>Funcionário:</strong> {ag.nomeFuncionario}</div>}
-                    {ag.valorServico && <div><strong>Valor:</strong> R$ {ag.valorServico.toFixed(2)}</div>}
-                  </li>
-                ))}
-              </ul>
-            )}
-          </section>
-        </main>
-
-        <footer className={styles.footer}>
-          <p>&copy; {new Date().getFullYear()} VetFofinhosRonaldo. Todos os direitos reservados.</p>
-        </footer>
-      </div>
+      <footer className={styles.footer}>
+        <p>&copy; {new Date().getFullYear()} VetFofinhosRonaldo. Todos os direitos reservados.</p>
+      </footer>
     </div>
-  );
-};
+  </div>
+);
+}

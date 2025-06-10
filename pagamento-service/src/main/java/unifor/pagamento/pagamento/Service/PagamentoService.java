@@ -38,7 +38,7 @@ public class PagamentoService {
     public Pagamento processarCheckoutCliente(Long idCliente, Long idUsuario) {
         // 1. Busca os detalhes do cliente no conta-service para obter nome e CPF.
         logger.info("Buscando dados para o cliente ID: {}", idCliente);
-        ClienteDTO cliente = restTemplate.getForObject("http://CONTA/api/contas/clientes/{idCliente}", ClienteDTO.class, idCliente);
+        ClienteDTO cliente = restTemplate.getForObject("http://conta-service/api/contas/clientes/{idCliente}", ClienteDTO.class, idCliente);
 
         if (cliente == null || cliente.getCpf() == null) {
             throw new PagamentoException("Cliente com ID " + idCliente + " não encontrado ou inválido.");

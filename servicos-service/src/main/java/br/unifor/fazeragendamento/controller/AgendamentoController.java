@@ -57,4 +57,10 @@ public class AgendamentoController {
         
         return ResponseEntity.ok(agendamentosDTO);
     }
+
+    @GetMapping("/cliente/{clienteId}")
+    public ResponseEntity<List<Agendamento>> listarPorCliente(@PathVariable Long clienteId) {
+        List<Agendamento> agendamentos = service.listarAgendamentosPorCliente(clienteId);
+        return ResponseEntity.ok(agendamentos);
+    }
 }
