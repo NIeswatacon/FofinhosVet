@@ -52,7 +52,19 @@ export const cartaoService = {
   // Listar todos os cartões
   listarCartoes: async (): Promise<Cartao[]> => {
     try {
-      const response = await api.get<Cartao[]>('/api/cartoes');
+      const userStr = localStorage.getItem('user');
+      if (!userStr) {
+        throw new CartaoError('User not found in localStorage. Please login first.');
+      }
+      const user = JSON.parse(userStr);
+      if (!user.id) {
+        throw new CartaoError('User ID not found. Please login again.');
+      }
+      const response = await api.get<Cartao[]>('/api/cartoes', {
+        headers: {
+          'x-user-id': user.id
+        }
+      });
       return response.data;
     } catch (error) {
       if (error instanceof AxiosError) {

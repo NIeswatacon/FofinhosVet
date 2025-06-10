@@ -38,14 +38,14 @@ const ModalCarrinho: React.FC<ModalCarrinhoProps> = ({ isVisible, onClose, idCli
       const result = response.data;
       if (result.success) {
         let carrinhoData = result.data && result.data.itens ? result.data : null;
-        if (carrinhoData) {
+        if (carrinhoData && typeof carrinhoData.total !== 'undefined') { // Adicionada verificação para total
           // Converter total para número
-          carrinhoData.total = parseFloat(carrinhoData.total as any);
+          carrinhoData.total = parseFloat(String(carrinhoData.total));
           // Converter preco dos itens para número
           if (carrinhoData.itens) {
             carrinhoData.itens = carrinhoData.itens.map(item => ({
               ...item,
-              preco: parseFloat(item.preco as any)
+              preco: parseFloat(String(item.preco))
             }));
           }
         }
@@ -94,13 +94,13 @@ const ModalCarrinho: React.FC<ModalCarrinhoProps> = ({ isVisible, onClose, idCli
 
   const handleCarrinhoAtualizadoInternamente = (carrinhoAtualizado: CarrinhoDetalhado | null) => {
     if (carrinhoAtualizado) {
-      const carrinhoProcessado = {
+      const carrinhoProcessado: CarrinhoDetalhado = {
         ...carrinhoAtualizado,
-        total: parseFloat(carrinhoAtualizado.total as any),
+        total: parseFloat(String(carrinhoAtualizado.total)), // Garantir que total seja número
         itens: carrinhoAtualizado.itens.map(item => ({
           ...item,
-          preco: parseFloat(item.preco as any)
-        }))
+          preco: parseFloat(String(item.preco)) // Garantir que preco seja número
+        })),
       };
       setCarrinho(carrinhoProcessado);
       onCarrinhoChange(carrinhoProcessado); // Passa o carrinho já processado para o pai
