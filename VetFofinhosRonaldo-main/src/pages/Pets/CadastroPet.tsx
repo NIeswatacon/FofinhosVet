@@ -50,11 +50,13 @@ const CadastroPet: React.FC = () => {
       const user = JSON.parse(userJson);
       const clienteId = user.id;
 
-      const response = await api.post(`/api/contas/clientes/${clienteId}/pets`, formData, {
-        headers: {
-          Authorization: `Bearer ${token}`,
-        },
-      });
+        const response = await api.post(`/api/contas/me/pets`, formData, {
+          headers: {
+            Authorization: `Bearer ${token}`,
+            'X-User-ID': clienteId
+          }
+        });
+
 
       if (response.status === 201) {
         setSuccess('Pet cadastrado com sucesso!');
