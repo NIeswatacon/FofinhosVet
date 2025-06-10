@@ -189,16 +189,19 @@ export const AgendamentosPage = () => {
       return;
     }
 
-   const payload = {
-      nomeCliente: formData.nomeCliente,
-      nomePet: formData.petNome,
+    const payload = {
+      idCliente: loggedInCliente.id,
+      idPet: parseInt(selectedPetIdForDropdown, 10),
       servico: formData.servico,
       data: formData.data,
-      nomeFuncionario: formData.nomeFuncionario || undefined, // Envia undefined se vazio
+      nomeFuncionario: formData.nomeFuncionario || undefined,
     };
 
     try {
-      await axios.post(`${API_AGENDAMENTOS_BASE_URL}/agendamentos`, payload);
+      await axios.post(`${API_AGENDAMENTOS_BASE_URL}/agendamentos`, payload,{ headers: {
+      'X-User-ID': loggedInCliente.id.toString(),
+      },
+    });
       setSuccessMessage('Agendamento criado com sucesso!');
       setFormData({
         nomeCliente: loggedInCliente?.nome || '',
