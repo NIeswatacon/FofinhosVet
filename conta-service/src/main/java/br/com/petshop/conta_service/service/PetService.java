@@ -1,42 +1,66 @@
 package br.com.petshop.conta_service.service;
 
+import br.com.petshop.conta_service.dto.PetDTO;
 import br.com.petshop.conta_service.model.Cliente;
 import br.com.petshop.conta_service.model.Pet;
+import br.com.petshop.conta_service.repository.ClienteRepository;
 import br.com.petshop.conta_service.repository.PetRepository;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Service;
+import org.springframework.transaction.annotation.Transactional;
 
 import java.util.List;
 import java.util.Optional;
+import java.util.stream.Collectors;
 
 @Service
 public class PetService {
 
-    private final PetRepository petRepository;
+    @Autowired
+    private PetRepository petRepository;
 
     @Autowired
-    public PetService(PetRepository petRepository) {
-        this.petRepository = petRepository;
+    private ClienteRepository clienteRepository;
+
+    @Transactional
+    public PetDTO criarPet(Long clienteId, PetDTO petDTO) {
+        Cliente cliente = clienteRepository.findById(clienteId)
+                .orElseThrow(() -> new RuntimeException("Cliente não encontrado"));
+
+        Pet pet = new Pet();
+        pet.setNome(petDTO.getNome());
+        pet.setEspecie(petDTO.getEspecie());
+        pet.setRaca(petDTO.getRaca());
+        pet.setDataNascimento(petDTO.getDataNascimento());
+        pet.setCliente(cliente);
+
+        Pet petSalvo = petRepository.save(pet);
+        return toDTO(petSalvo);
     }
 
-    public Pet criarPet(Long clienteId, Pet pet) {
-    Cliente cliente = new Cliente();
-    cliente.setId(clienteId); // define o cliente a partir do ID
-    pet.setCliente(cliente);  // associa o cliente ao pet
-    return petRepository.save(pet);
-}
+    public List<PetDTO> listarPetsPorCliente(Long clienteId) {
+        return petRepository.findByClienteId(clienteId).stream()
+                .map(this::toDTO)
+                .collect(Collectors.toList());
+    }
 
-
-    public List<Pet> listarPetsPorCliente(Long clienteId) {
-        return petRepository.findByClienteId(clienteId);
+    private PetDTO toDTO(Pet pet) {
+        PetDTO dto = new PetDTO();
+        dto.setId(pet.getId());
+        dto.setNome(pet.getNome());
+        dto.setEspecie(pet.getEspecie());
+        dto.setRaca(pet.getRaca());
+        dto.setDataNascimento(pet.getDataNascimento());
+        dto.setClienteId(pet.getCliente().getId());
+        return dto;
     }
 
     public Optional<Pet> buscarPetDoClientePorId(Long clienteId, Long petId) {
-        return petRepository.findByIdAndClienteId(petId, clienteId);
+        return petRepository.findByIdAndCliente_Id(petId, clienteId);
     }
 
     public Pet atualizarPetDoCliente(Long clienteId, Long petId, Pet petAtualizado) {
-        Pet petExistente = petRepository.findByIdAndClienteId(petId, clienteId)
+        Pet petExistente = petRepository.findByIdAndCliente_Id(petId, clienteId)
                 .orElseThrow(() -> new RuntimeException("Pet não encontrado ou não pertence ao cliente"));
 
         petExistente.setNome(petAtualizado.getNome());
@@ -48,7 +72,7 @@ public class PetService {
     }
 
     public void deletarPetDoCliente(Long clienteId, Long petId) {
-        Pet pet = petRepository.findByIdAndClienteId(petId, clienteId)
+        Pet pet = petRepository.findByIdAndCliente_Id(petId, clienteId)
                 .orElseThrow(() -> new RuntimeException("Pet não encontrado ou não pertence ao cliente"));
         petRepository.delete(pet);
     }

@@ -147,9 +147,8 @@ public class ClienteController {
     public ResponseEntity<PetDTO> criarPetParaCliente(@RequestHeader("X-User-ID") String userId,
                                                       @RequestBody PetDTO petDTO) {
         try {
-            Pet pet = petToEntity(petDTO);
-            Pet novoPet = petService.criarPet(Long.parseLong(userId), pet);
-            return new ResponseEntity<>(petToDTO(novoPet), HttpStatus.CREATED);
+            PetDTO novoPet = petService.criarPet(Long.parseLong(userId), petDTO);
+            return new ResponseEntity<>(novoPet, HttpStatus.CREATED);
         } catch (RuntimeException e) {
             return ResponseEntity.status(HttpStatus.BAD_REQUEST).body(null);
         }
@@ -158,10 +157,10 @@ public class ClienteController {
     @GetMapping("/{id}/pets")
     public ResponseEntity<List<PetDTO>> listarPetsDoCliente(@PathVariable Long id) {
         return clienteService.buscarClientePorId(id)
-                .map(cliente -> ResponseEntity.ok(petService.listarPetsPorCliente(id)
-                        .stream()
-                        .map(this::petToDTO)
-                        .collect(Collectors.toList())))
+                .map(cliente -> {
+                    List<PetDTO> pets = petService.listarPetsPorCliente(id);
+                    return ResponseEntity.ok(pets);
+                })
                 .orElse(ResponseEntity.notFound().build());
     }
 

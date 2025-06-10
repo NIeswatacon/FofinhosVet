@@ -59,7 +59,12 @@ public class CartaoController {
     }
 
     @GetMapping
-    public ResponseEntity<List<CartaoDTO>> listarCartoesPorUsuarioLogado(@RequestHeader("X-User-ID") Long idUsuario) {
+    public ResponseEntity<List<CartaoDTO>> listarCartoesPorUsuarioLogado(@RequestHeader(value = "X-User-ID", required = false) Long idUsuarioX,
+                                                                         @RequestHeader(value = "x-user-id", required = false) Long idUsuariox) {
+        Long idUsuario = idUsuarioX != null ? idUsuarioX : idUsuariox;
+        if (idUsuario == null) {
+            return ResponseEntity.badRequest().build();
+        }
         List<CartaoDTO> cartoes = cartaoRepository.findByIdUsuario(idUsuario).stream()
                 .map(this::toDTO)
                 .collect(Collectors.toList());
