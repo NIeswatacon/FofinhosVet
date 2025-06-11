@@ -6,6 +6,8 @@ import type { Pagamento } from '../../services/pagamentoService';
 import { cartaoService, TipoCartao, CartaoError, type Cartao } from '../../services/cartaoService'; // Importar o tipo Cartao
 import './Pagamento.css';
 
+console.log('PagamentoComponent: Arquivo carregado.'); // Este log deve aparecer assim que o componente é processado
+
 // Enums correspondentes ao backend
 enum StatusPagamento {
   PENDENTE = 'PENDENTE',
@@ -65,19 +67,38 @@ const PagamentoComponent: React.FC = () => {
       setLoadingCartoes(true);
       setErroCartoes(null);
       try {
-        // Supondo que idUsuario seja necessário para listar cartões e esteja disponível
-        // Se não, ajuste a chamada do serviço
-        // const idUsuarioLogado = 1; // Exemplo: obter de um contexto de autenticação
-        // const lista = await cartaoService.listarCartoesPorUsuario(idUsuarioLogado);
-        const lista = await cartaoService.listarCartoes(); // Se listarCartoes não precisar de idUsuario
-        setCartoesSalvos(lista);
+        // Obter ID do usuário do localStorage
+        const userStr = localStorage.getItem('user');
+        if (!userStr) {
+          setErroCartoes('Usuário não encontrado. Por favor, faça login novamente.');
+          return;
+        }
+
+        const user = JSON.parse(userStr);
+        if (!user.id) {
+          setErroCartoes('ID do usuário não encontrado. Por favor, faça login novamente.');
+          return;
+        }
+
+        console.log('Buscando cartões para o usuário:', user.id);
+        const lista = await cartaoService.buscarCartoesPorUsuario(user.id);
+        console.log('Cartões encontrados:', lista);
+        
+        if (Array.isArray(lista)) {
+          setCartoesSalvos(lista);
+        } else {
+          console.error('Resposta inválida do servidor:', lista);
+          setErroCartoes('Erro ao carregar cartões. Formato de resposta inválido.');
+          setCartoesSalvos([]);
+        }
       } catch (e) {
+        console.error("Erro ao buscar cartões:", e);
         if (e instanceof CartaoError) {
           setErroCartoes(e.message);
         } else {
-          setErroCartoes('Erro ao carregar cartões salvos.');
+          setErroCartoes('Erro ao carregar cartões salvos. Tente novamente.');
         }
-        console.error("Erro ao buscar cartões:", e);
+        setCartoesSalvos([]);
       } finally {
         setLoadingCartoes(false);
       }
@@ -115,32 +136,39 @@ const PagamentoComponent: React.FC = () => {
 
   // Validações
   const validateForm = () => {
+    console.log('validateForm: Iniciando validação.');
     if (!formData.valor || Number(formData.valor.replace(/\D/g, '')) <= 0) {
       setError('Valor inválido. Por favor, insira um valor para o pagamento.');
+      console.log('validateForm: Erro - Valor inválido.');
       return false;
     }
 
     if (formData.formaPagamento === FormaPagamento.CARTAO) {
       if (!formData.numeroCartao || formData.numeroCartao.replace(/\D/g, '').length !== 16) {
         setError('Número do cartão inválido. Deve conter 16 dígitos.');
+        console.log('validateForm: Erro - Número do cartão inválido.');
         return false;
       }
       if (!formData.nomeTitular?.trim()) {
         setError('Nome do titular é obrigatório.');
+        console.log('validateForm: Erro - Nome do titular obrigatório.');
         return false;
       }
       if (!formData.dataValidade || formData.dataValidade.replace(/\D/g, '').length !== 4) {
         setError('Data de validade inválida. Use o formato MM/AA.');
+        console.log('validateForm: Erro - Data de validade inválida.');
         return false;
       }
       if (!formData.cvv || formData.cvv.replace(/\D/g, '').length < 3 || formData.cvv.replace(/\D/g, '').length > 4) {
         setError('CVV inválido. Deve conter 3 ou 4 dígitos.');
+        console.log('validateForm: Erro - CVV inválido.');
         return false;
       }
     }
 
     if (!formData.cpfCliente || formData.cpfCliente.replace(/\D/g, '').length !== 11) {
       setError('CPF do cliente inválido. Deve conter 11 dígitos.');
+      console.log('validateForm: Erro - CPF inválido.');
       return false;
     }
     // Adicionar validação para idUsuario e idPedido se forem obrigatórios
@@ -154,6 +182,7 @@ const PagamentoComponent: React.FC = () => {
     // }
 
     setError(null); // Limpa erros anteriores se a validação passar
+    console.log('validateForm: Validação bem-sucedida.');
     return true;
   };
 
@@ -194,64 +223,89 @@ const PagamentoComponent: React.FC = () => {
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
+    console.log('handleSubmit: Função iniciada.'); // Log no início da função
     setError(null);
 
-    // Simular idUsuario e idPedido - Em um app real, viriam do estado global/contexto/props
-    const idUsuarioSimulado = 1; // Substituir pela lógica real
+    // Obter ID do usuário do localStorage
+    const userStr = localStorage.getItem('user');
+    if (!userStr) {
+      setError('Usuário não encontrado. Por favor, faça login novamente.');
+      console.log('handleSubmit: Usuário não encontrado, saindo.');
+      return;
+    }
+
+    const user = JSON.parse(userStr);
+    if (!user.id) {
+      setError('ID do usuário não encontrado. Por favor, faça login novamente.');
+      console.log('handleSubmit: ID do usuário não encontrado, saindo.');
+      return;
+    }
+
+    // Simular idPedido - Em um app real, viria do estado global/contexto/props
     const idPedidoSimulado = Math.floor(Math.random() * 1000) + 1; // Substituir pela lógica real
 
     const currentFormData = {
       ...formData,
-      idUsuario: idUsuarioSimulado,
+      idUsuario: user.id,
       idPedido: idPedidoSimulado,
     };
 
-    if (!validateForm()) { // Passar currentFormData se a validação depender de idUsuario/idPedido
+    console.log('handleSubmit: Chamando validateForm()...');
+    if (!validateForm()) {
+      console.log('handleSubmit: validateForm() retornou false, saindo.');
       return;
     }
 
     setIsLoading(true);
 
     try {
+      console.log('Iniciando handleSubmit (dentro do try)...');
       // Criar cartão apenas se for um novo cartão e a forma de pagamento for CARTAO
-      // Se selectedCardId for null, significa que é um novo cartão
       if (currentFormData.formaPagamento === FormaPagamento.CARTAO && !selectedCardId) {
+        console.log('Tentando criar novo cartão...');
         const cartaoData = {
           numeroCartao: currentFormData.numeroCartao!.replace(/\D/g, ''),
           nomeTitular: currentFormData.nomeTitular!,
-          dataValidade: currentFormData.dataValidade!.replace('/', ''), // Formato MMYY
+          dataValidade: currentFormData.dataValidade!.replace(/\D/g, ''), // Remover todos os caracteres não numéricos
           cvv: currentFormData.cvv!,
           tipoCartao: currentFormData.tipoCartao === 'DEBITO' ? TipoCartao.DEBITO : TipoCartao.CREDITO,
-          cpfTitular: currentFormData.cpfCliente.replace(/\D/g, ''), // Usar cpfCliente como cpfTitular
-          idUsuario: currentFormData.idUsuario! // Garantir que idUsuario está presente
+          cpfTitular: currentFormData.cpfCliente.replace(/\D/g, ''),
+          idUsuario: user.id
         };
+
+        console.log('Dados do cartão a serem enviados:', cartaoData);
         await cartaoService.criarCartao(cartaoData);
-        // Idealmente, após criar o cartão, você pode querer recarregar a lista de cartões salvos
-        // ou adicionar o novo cartão à lista localmente.
+        console.log('Cartão criado com sucesso no frontend.');
+        
+        // Recarregar lista de cartões após salvar
+        console.log('Recarregando cartões salvos...');
+        const lista = await cartaoService.buscarCartoesPorUsuario(user.id);
+        setCartoesSalvos(lista);
+        console.log('Cartões salvos recarregados.');
       }
 
       const pagamentoData: Pagamento = {
-        valor: Number(currentFormData.valor.replace(/\D/g, '')), // Valor em centavos ou reais, dependendo do backend
+        valor: Number(currentFormData.valor.replace(/\D/g, '')),
         formaPagamento: currentFormData.formaPagamento,
-        status: StatusPagamento.PENDENTE, // O backend deve definir o status inicial
+        status: StatusPagamento.PENDENTE,
         idPedido: currentFormData.idPedido!,
-        // nomeCliente e cpfCliente podem ser opcionais no payload se o backend os obtém via idUsuario
         nomeCliente: currentFormData.formaPagamento === FormaPagamento.CARTAO ? currentFormData.nomeTitular! : 'Cliente PIX/Boleto',
         cpfCliente: currentFormData.cpfCliente.replace(/\D/g, ''),
-        idUsuario: currentFormData.idUsuario!,
-        // Se o pagamento for com cartão salvo, você pode querer enviar o ID do cartão
-        // idCartaoSalvo: selectedCardId ?? undefined,
+        idUsuario: user.id,
       };
 
+      console.log('Criando pagamento com os dados:', pagamentoData);
       const response = await pagamentoService.criarPagamento(pagamentoData);
+      console.log('Pagamento criado com sucesso:', response);
       setSuccess(true);
+      
       if (currentFormData.formaPagamento === FormaPagamento.PIX && response.chavePix) {
         setPixKey(response.chavePix);
       } else if (currentFormData.formaPagamento === FormaPagamento.CARTAO) {
-        // Lógica para pagamento com cartão aprovado/rejeitado, se o backend retornar isso imediatamente
         console.log("Pagamento com cartão enviado:", response);
       }
     } catch (err) {
+      console.error("Erro no handleSubmit:", err);
       if (err instanceof PagamentoError || err instanceof CartaoError) {
         setError(err.message);
       } else if (axios.isAxiosError(err) && err.response) {
@@ -259,8 +313,8 @@ const PagamentoComponent: React.FC = () => {
       } else {
         setError('Ocorreu um erro inesperado ao processar o pagamento.');
       }
-      console.error("Erro no handleSubmit:", err);
     } finally {
+      console.log('Finalizando handleSubmit.');
       setIsLoading(false);
     }
   };

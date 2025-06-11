@@ -1,5 +1,14 @@
 import api from './api';
 import { AxiosError } from 'axios';
+import { API_URLS } from './api';
+
+// Criar uma instância do axios específica para o serviço de cartão
+const cartaoApi = api.create({
+  baseURL: API_URLS.pagamento,
+  headers: {
+    'Content-Type': 'application/json',
+  },
+});
 
 // Tipos
 export enum TipoCartao {
@@ -47,7 +56,10 @@ export const cartaoService = {
   criarCartao: async (cartao: Cartao): Promise<Cartao> => {
     try {
       console.log('Criando novo cartão:', cartao);
-      const response = await api.post<Cartao>('/api/cartoes', cartao);
+      if (!cartao.idUsuario) {
+        throw new CartaoError('ID do usuário é obrigatório');
+      }
+      const response = await cartaoApi.post<Cartao>(`/api/cartoes/usuario/${cartao.idUsuario}`, cartao);
       console.log('Cartão criado com sucesso:', response.data);
       return response.data;
     } catch (error) {
@@ -80,7 +92,7 @@ export const cartaoService = {
       }
 
       console.log('ID do usuário:', userId);
-      const response = await api.get<Cartao[]>('/api/cartoes', {
+      const response = await cartaoApi.get<Cartao[]>('/api/cartoes', {
         headers: {
           'X-User-ID': userId.toString()
         }
@@ -106,7 +118,7 @@ export const cartaoService = {
   buscarCartaoPorId: async (id: number): Promise<Cartao> => {
     try {
       console.log('Buscando cartão por ID:', id);
-      const response = await api.get<Cartao>(`/api/cartoes/${id}`);
+      const response = await cartaoApi.get<Cartao>(`/api/cartoes/${id}`);
       console.log('Cartão encontrado:', response.data);
       return response.data;
     } catch (error) {
@@ -125,7 +137,7 @@ export const cartaoService = {
   buscarCartoesPorUsuario: async (idUsuario: number): Promise<Cartao[]> => {
     try {
       console.log('Buscando cartões do usuário:', idUsuario);
-      const response = await api.get<Cartao[]>(`/api/cartoes/usuario/${idUsuario}`);
+      const response = await cartaoApi.get<Cartao[]>(`/api/cartoes/usuario/${idUsuario}`);
       console.log('Cartões encontrados:', response.data);
       return response.data;
     } catch (error) {
@@ -144,7 +156,7 @@ export const cartaoService = {
   deletarCartao: async (id: number): Promise<void> => {
     try {
       console.log('Deletando cartão:', id);
-      await api.delete(`/api/cartoes/${id}`);
+      await cartaoApi.delete(`/api/cartoes/${id}`);
       console.log('Cartão deletado com sucesso');
     } catch (error) {
       console.error('Erro ao deletar cartão:', error);

@@ -1,7 +1,7 @@
 // server/src/database.ts (ou onde você cria o pool)
 import mysql from 'mysql2/promise';
 // Certifique-se que estas constantes vêm do seu arquivo config.ts que usa dotenv
-import { DB_HOST, DB_USER, DB_PASS, DB_NAME, DB_PORT } from '../config';
+import { DB_HOST, DB_USER, DB_PASS, DB_NAME, DB_PORT } from './config';
 
 console.log("🔍 Conectando ao Banco de Dados com:", {
   host: DB_HOST,

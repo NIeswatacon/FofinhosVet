@@ -11,4 +11,9 @@ router.get('/', (req: Request, res: Response) => {
 router.use('/produtos', produtoRoute);
 router.use('/carrinho', carrinhoRoute);
 
+// Nova rota para /api/contas/clientes
+router.get('/api/contas/clientes', (req: Request, res: Response) => {
+  res.json({ message: 'Endpoint de clientes' });
+});
+
 export { router };

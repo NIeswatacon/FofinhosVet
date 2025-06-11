@@ -59,17 +59,28 @@ const CartaoComponent: React.FC = () => {
   useEffect(() => {
     // Obter ID do usuário do localStorage
     const userStr = localStorage.getItem('user');
+    console.log('Dados do usuário do localStorage:', userStr);
+    
     if (userStr) {
       try {
         const user = JSON.parse(userStr);
-        if (user.id) {
+        console.log('Usuário parseado:', user);
+        
+        if (user && user.id) {
+          console.log('ID do usuário encontrado:', user.id);
           setForm(prev => ({ ...prev, idUsuario: user.id }));
+        } else {
+          console.error('ID do usuário não encontrado no objeto:', user);
+          setFormError('ID do usuário não encontrado. Por favor, faça login novamente.');
+          navigate('/login');
         }
       } catch (e) {
         console.error('Erro ao parsear dados do usuário:', e);
         setFormError('Erro ao carregar dados do usuário. Por favor, faça login novamente.');
+        navigate('/login');
       }
     } else {
+      console.error('Nenhum dado de usuário encontrado no localStorage');
       setFormError('Usuário não encontrado. Por favor, faça login novamente.');
       navigate('/login');
     }
@@ -77,22 +88,27 @@ const CartaoComponent: React.FC = () => {
 
   useEffect(() => {
     if (form.idUsuario) {
+      console.log('ID do usuário atualizado, buscando cartões para:', form.idUsuario);
       fetchCartoes();
     }
   }, [form.idUsuario]);
 
   const fetchCartoes = async () => {
     if (!form.idUsuario) {
+      console.error('ID do usuário não encontrado no form:', form);
       setFormError('ID do usuário não encontrado. Por favor, faça login novamente.');
       return;
     }
 
+    console.log('Iniciando busca de cartões para usuário:', form.idUsuario);
     setLoading(true);
     try {
-      const lista = await cartaoService.listarCartoes();
+      console.log('Chamando cartaoService.buscarCartoesPorUsuario...');
+      const lista = await cartaoService.buscarCartoesPorUsuario(form.idUsuario);
+      console.log('Resposta do backend:', lista);
       setCartoes(Array.isArray(lista) ? lista : []);
     } catch (e) {
-      console.error('Erro ao carregar cartões:', e);
+      console.error('Erro detalhado ao carregar cartões:', e);
       setFormError('Erro ao carregar cartões. Tente novamente.');
       setCartoes([]); // Garantir que cartoes seja um array vazio em caso de erro
     } finally {
@@ -136,6 +152,13 @@ const CartaoComponent: React.FC = () => {
       setFormError(err);
       return;
     }
+
+    if (!form.idUsuario) {
+      setFormError('ID do usuário não encontrado. Por favor, faça login novamente.');
+      navigate('/login');
+      return;
+    }
+
     setLoading(true);
     try {
       const payload = {
@@ -147,10 +170,11 @@ const CartaoComponent: React.FC = () => {
       console.log('Enviando para o backend:', payload);
       await cartaoService.criarCartao(payload);
       setSuccessMsg('Cartão cadastrado com sucesso!');
-      setForm({ numeroCartao: '', nomeTitular: '', dataValidade: '', cvv: '', tipoCartao: tab, cpfTitular: '', idUsuario: 0 });
+      setForm({ numeroCartao: '', nomeTitular: '', dataValidade: '', cvv: '', tipoCartao: tab, cpfTitular: '', idUsuario: form.idUsuario });
       fetchCartoes();
       navigate('/pagamento');
     } catch (e) {
+      console.error('Erro ao cadastrar cartão:', e);
       setFormError('Erro ao cadastrar cartão. Tente novamente.');
     } finally {
       setLoading(false);
