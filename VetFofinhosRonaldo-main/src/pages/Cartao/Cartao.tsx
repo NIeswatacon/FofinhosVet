@@ -22,15 +22,18 @@ function maskCVV(value: string) {
 }
 
 function maskCPF(value: string) {
-  return value.replace(/\D/g, '').replace(/(\d{3})(\d{3})(\d{3})(\d{0,2})/, '$1.$2.$3-$4').slice(0, 14);
+  return value.replace(/\D/g, '')
+    .replace(/(\d{3})(\d)/, '$1.$2')
+    .replace(/(\d{3})(\d)/, '$1.$2')
+    .replace(/(\d{3})(\d{1,2})$/, '$1-$2')
+    .slice(0, 14);
 }
 
 function getCardFlag(number: string) {
-  const n = number.replace(/\D/g, '');
-  if (/^4/.test(n)) return 'visa';
-  if (/^5[1-5]/.test(n)) return 'mastercard';
-  if (/^3[47]/.test(n)) return 'amex';
-  if (/^6/.test(n)) return 'elo';
+  const num = number.replace(/\D/g, '');
+  if (num.startsWith('4')) return 'visa';
+  if (num.startsWith('5')) return 'mastercard';
+  if (num.startsWith('3')) return 'amex';
   return 'default';
 }
 
@@ -87,10 +90,11 @@ const CartaoComponent: React.FC = () => {
     setLoading(true);
     try {
       const lista = await cartaoService.listarCartoes();
-      setCartoes(lista);
+      setCartoes(Array.isArray(lista) ? lista : []);
     } catch (e) {
       console.error('Erro ao carregar cartões:', e);
       setFormError('Erro ao carregar cartões. Tente novamente.');
+      setCartoes([]); // Garantir que cartoes seja um array vazio em caso de erro
     } finally {
       setLoading(false);
     }
@@ -167,7 +171,7 @@ const CartaoComponent: React.FC = () => {
     }
   };
 
-  const filteredCartoes = cartoes.filter(c => c.tipoCartao === tab);
+  const filteredCartoes = Array.isArray(cartoes) ? cartoes.filter(c => c.tipoCartao === tab) : [];
 
   // Preview do cartão
   const preview = (

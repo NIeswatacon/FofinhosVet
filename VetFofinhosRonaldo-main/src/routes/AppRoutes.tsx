@@ -12,6 +12,7 @@ import ClientesPage from "../pages/Clientes/ClientesPage";
 // Certifique-se de que o arquivo src/layouts/MainLayout.tsx existe
 // e que o caminho de importação abaixo está correto.
 import MainLayout from "../layouts/MainLayout/MainLayout";
+import ErrorBoundary from "../components/ErrorBoundary/ErrorBoundary";
 
 export default function AppRoutes() {
   return useRoutes([
@@ -23,7 +24,7 @@ export default function AppRoutes() {
     { element: <MainLayout />, children: [
         { path: '/agendamentos', element: <AgendamentosPage /> },
         { path: '/pagamento', element: <PagamentoComponent /> },
-        { path: '/cartao', element: <Cartao /> },
+        { path: '/cartao', element: <ErrorBoundary><Cartao /></ErrorBoundary> },
         { path: '/produtos', element: <Vendas /> },
         { path: '/clientes', element: <ClientesPage /> },
         //  { path: '*', element: <NotFoundPage /> } // Se tiver uma página NotFound, pode ir aqui
