@@ -24,7 +24,7 @@ public class Cliente {
     private String cpf;
     private String telefone;
     private String endereco;
-    private String senha; // criptografada
+    private String senha; 
 
     @OneToMany(mappedBy = "cliente", cascade = CascadeType.ALL, orphanRemoval = true)
     @JsonManagedReference
