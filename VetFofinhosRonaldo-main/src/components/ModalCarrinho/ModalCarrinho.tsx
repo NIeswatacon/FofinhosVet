@@ -19,20 +19,27 @@ const ModalCarrinho: React.FC<ModalCarrinhoProps> = ({ isVisible, onClose, idCli
   const [error, setError] = useState<string | null>(null);
   
   const fetchCarrinho = useCallback(async () => {
+    const user = JSON.parse(localStorage.getItem('user') || '{}');
+    const idCliente = user.id;
+    
     if (!idCliente) {
       setError("ID do cliente não fornecido.");
       setLoading(false);
       return;
     }
+    
     setLoading(true);
     setError(null);
     try {
       const response = await axios.get<ApiResponse<CarrinhoDetalhado>>(
-        `http://localhost:8080/api/vendas/carrinho`,
+        `https://microservicevendas-production.up.railway.app/carrinho/${idCliente}`,
         {
           headers: {
-            'X-User-ID': idCliente.toString(),
+            'Content-Type': 'application/json',
+            'Accept': 'application/json',
+            'X-User-ID': idCliente.toString()
           },
+          withCredentials: true
         }
       );
       const result = response.data;

@@ -6,6 +6,7 @@ import axios from 'axios';
 import { BsInfoCircle } from 'react-icons/bs'; // Importar o ícone de informação
 import styles from './CardProduto.module.css'; // Importar o CSS Module
 import type { ProdutoBase, AdicionarAoCarrinhoPayload, CarrinhoDetalhado, ApiResponse } from '../../types/index';
+import { API_URLS } from '../../services/api';
 
 interface CardProdutoProps {
     produto: ProdutoBase;
@@ -41,7 +42,7 @@ const CardProduto: React.FC<CardProdutoProps> = ({ produto, idCliente, onProduto
         try {
             // Corrigido o endpoint para corresponder à API de adicionar produto ao carrinho
            const response = await axios.post<ApiResponse<CarrinhoDetalhado>>(
-                'http://localhost:8080/api/vendas/carrinho/adicionar', 
+                `${API_URLS.vendas}/api/vendas/carrinho/adicionar`, 
                 payload,
                 { headers: { 'x-user-id': idCliente.toString() } }
             );

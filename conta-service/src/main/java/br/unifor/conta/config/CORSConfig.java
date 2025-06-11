@@ -1,4 +1,4 @@
-package br.unifor.fazeragendamento.config;
+package br.unifor.conta.config;
 
 import org.springframework.context.annotation.Configuration;
 import org.springframework.lang.NonNull;
@@ -17,4 +17,4 @@ public class CORSConfig implements WebMvcConfigurer {
                 .exposedHeaders("Authorization")
                 .maxAge(3600);
     }
-}
+} 

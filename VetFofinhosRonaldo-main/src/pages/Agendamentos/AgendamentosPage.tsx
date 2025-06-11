@@ -1,10 +1,11 @@
 import { useState, useEffect, type ChangeEvent, type FormEvent } from 'react';
 import axios from 'axios';
+import { API_URLS } from '../../services/api';
 import styles from './AgendamentosPage.module.css'; // Verifique o nome real do seu arquivo .css
 import NavBar from '../../components/NavBar/NavBar';
-// URLs base das APIs
-const API_AGENDAMENTOS_BASE_URL = 'http://localhost:8080/api/agendamentos'; // Gateway
-const API_CONTAS_BASE_URL = 'http://localhost:8080/api/contas'; // Gateway
+
+const API_AGENDAMENTOS_BASE_URL = `${API_URLS.servicos}/api/agendamentos`;
+const API_CONTAS_BASE_URL = `${API_URLS.conta}/api/contas`;
 
 export const ServicoEnumFrontend = {
   BANHO: "BANHO",
