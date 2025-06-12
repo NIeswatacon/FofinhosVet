@@ -70,8 +70,8 @@ const ModalCarrinho: React.FC<ModalCarrinhoProps> = ({ isVisible, onClose, carri
             itens: (carrinhoData.itens || []).map(item => ({
               ...item,
               preco: parseFloat(String(item.preco))
-            }));
-          }
+            }))
+          };
         }
         console.log('[ModalCarrinho] Carrinho recebido do GET:', carrinhoData); // Log para depuração
         setCarrinho(carrinhoData);

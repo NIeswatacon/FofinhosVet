@@ -6,7 +6,7 @@ import type { AxiosError, InternalAxiosRequestConfig } from 'axios';
 const API_URLS = {
   servicos: 'http://localhost:8081',
   vendas: 'http://localhost:8082',
-  pagamento: 'http://localhost:8083',
+  pagamento: 'http://localhost:8085',
   conta: 'http://localhost:8084'
 };
 

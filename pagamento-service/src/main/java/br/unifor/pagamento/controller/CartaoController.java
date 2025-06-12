@@ -10,7 +10,7 @@ import java.util.List;
 
 @RestController
 @RequestMapping("/api/cartoes")
-@CrossOrigin(origins = "http://localhost:5173") // Permite CORS para o frontend
+@CrossOrigin(origins = {"http://localhost:5173", "http://localhost:5174"}) // Permite CORS para o frontend
 public class CartaoController {
 
     @Autowired
@@ -22,10 +22,10 @@ public class CartaoController {
         return ResponseEntity.ok(cartaoService.listarTodos());
     }
 
-    // Adicionar cartão (POST /api/cartoes)
-    @PostMapping
-    public ResponseEntity<?> adicionarCartao(@RequestBody Cartao cartao) {
-        // O idUsuario já virá no corpo do objeto Cartao
+    // Adicionar cartão (POST /api/cartoes/usuario/{usuarioId})
+    @PostMapping("/usuario/{usuarioId}")
+    public ResponseEntity<?> adicionarCartao(@PathVariable Long usuarioId, @RequestBody Cartao cartao) {
+        cartao.setIdUsuario(usuarioId);
         Cartao novoCartao = cartaoService.adicionarCartao(cartao);
         return ResponseEntity.ok(novoCartao);
     }
@@ -44,5 +44,13 @@ public class CartaoController {
     public ResponseEntity<Void> deletarCartao(@PathVariable Long id) {
         cartaoService.deletarCartao(id);
         return ResponseEntity.noContent().build();
+    }
+
+    // Buscar cartão por ID (GET /api/cartoes/{id})
+    @GetMapping("/{id}")
+    public ResponseEntity<Cartao> buscarCartaoPorId(@PathVariable Long id) {
+        return cartaoService.buscarCartaoPorId(id)
+                .map(ResponseEntity::ok)
+                .orElse(ResponseEntity.notFound().build());
     }
 } 

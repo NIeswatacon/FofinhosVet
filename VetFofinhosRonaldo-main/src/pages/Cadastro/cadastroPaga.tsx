@@ -1,7 +1,8 @@
 import React, { useState, useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
 import './cadastroPaga.css';
-import api from '../../services/api';
+import api, { API_URLS } from '../../services/api';
+import axios from 'axios';
 
 // Tipagem explícita para as props do Paw
 interface PawProps {
@@ -121,42 +122,56 @@ const CadastroPaga: React.FC = () => {
       // Remove o campo confirmarSenha antes de enviar
       const { confirmarSenha, ...dadosCadastro } = form;
       
+      const url = `${API_URLS.conta}/api/contas`;
+
       console.log('Enviando dados para a API:', dadosCadastro);
-      console.log('URL da API:', '/api/contas/clientes');
+      console.log('URL da API (normalizada):', url);
       
-      const response = await api.post('/api/contas/clientes', dadosCadastro);
+      const response = await axios.post(url, dadosCadastro);
       
-      console.log('Resposta da API:', response.data);
+      console.log('Resposta COMPLETA da API:', response);
+      console.log('Dados da Resposta da API:', response.data);
+      console.log('Status da Resposta da API:', response.status);
       
-      if (response.data) {
+      if (response.status >= 200 && response.status < 300) {
         console.log('Cadastro realizado com sucesso');
         setSubmitted(true);
         // Redireciona para a página de clientes após 2 segundos
         setTimeout(() => {
           navigate('/clientes');
         }, 2000);
+      } else {
+        console.error('Cadastro falhou com status inesperado:', response.status, response.data);
+        setError('Erro inesperado ao realizar cadastro. Tente novamente.');
       }
     } catch (err: any) {
       console.error('=== ERRO NO CADASTRO ===');
-      console.error('Erro completo:', err);
+      console.error('Erro completo (Axios):', err);
       
       if (err.response) {
-        console.error('Dados da resposta:', err.response.data);
-        console.error('Status da resposta:', err.response.status);
+        console.error('Detalhes da resposta de erro do backend:', err.response.data);
+        console.error('Status da resposta de erro:', err.response.status);
         
+        let errorMessage = 'Erro ao realizar cadastro. Por favor, tente novamente.';
+        if (err.response.data && err.response.data.message) {
+            errorMessage = err.response.data.message;
+        } else if (typeof err.response.data === 'string') {
+            errorMessage = err.response.data;
+        }
+
         if (err.response.status === 400) {
-          setError('Dados inválidos. Por favor, verifique os campos.');
+          setError(`Dados inválidos: ${errorMessage}`);
         } else if (err.response.status === 409) {
-          setError('Email ou CPF já cadastrado.');
+          setError(`Conflito: ${errorMessage}`);
         } else {
-          setError('Erro ao realizar cadastro. Por favor, tente novamente.');
+          setError(`Erro do servidor (${err.response.status}): ${errorMessage}`);
         }
       } else if (err.request) {
-        console.error('Erro na requisição:', err.request);
-        setError('Não foi possível conectar ao servidor. Verifique sua conexão.');
+        console.error('Erro na requisição (sem resposta do servidor):', err.request);
+        setError('Não foi possível conectar ao servidor. Verifique se o backend está rodando e acessível.');
       } else {
-        console.error('Erro:', err.message);
-        setError('Erro ao realizar cadastro. Por favor, tente novamente.');
+        console.error('Erro desconhecido:', err.message);
+        setError('Ocorreu um erro inesperado ao tentar cadastrar.');
       }
     }
   };
