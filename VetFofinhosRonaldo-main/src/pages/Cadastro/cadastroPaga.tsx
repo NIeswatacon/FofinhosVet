@@ -136,9 +136,9 @@ const CadastroPaga: React.FC = () => {
       if (response.status >= 200 && response.status < 300) {
         console.log('Cadastro realizado com sucesso');
         setSubmitted(true);
-        // Redireciona para a página de clientes após 2 segundos
+        // Redireciona para a página inicial após 2 segundos
         setTimeout(() => {
-          navigate('/clientes');
+          navigate('/');
         }, 2000);
       } else {
         console.error('Cadastro falhou com status inesperado:', response.status, response.data);
@@ -294,7 +294,7 @@ const CadastroPaga: React.FC = () => {
         {submitted && (
           <div className="success-message">
             <p>Cadastro realizado com sucesso!</p>
-            <p>Redirecionando para a página de clientes...</p>
+            <p>Redirecionando para a página inicial...</p>
           </div>
         )}
       </form>

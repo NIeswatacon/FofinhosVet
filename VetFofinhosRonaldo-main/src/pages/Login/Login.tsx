@@ -110,28 +110,8 @@ const Login: React.FC = () => {
           tipo: tokenData.tipo
         }));
 
-        // --- Lógica para verificar pets e redirecionar ---
-        const userId = tokenData.sub; // O ID do usuário está no 'sub' do token
-        try {
-          const petsResponse = await api.get(`/api/contas/clientes/${userId}/pets`, {
-            headers: {
-              'X-User-ID': userId, // Passar o ID do usuário logado no cabeçalho
-            },
-          });
-          
-          if (petsResponse.data && petsResponse.data.length === 0) {
-            console.log('Usuário não possui pets, redirecionando para cadastro de pet.');
-            navigate('/cadastro-pet');
-          } else {
-            console.log('Usuário possui pets, redirecionando para clientes.');
-            navigate('/clientes');
-          }
-        } catch (petError) {
-          console.error('Erro ao verificar pets do usuário após login:', petError);
-          // Em caso de erro ao verificar pets, redireciona para clientes por segurança
-          navigate('/clientes');
-        }
-        // --- Fim da lógica de verificação de pets ---
+        console.log('Login bem-sucedido, redirecionando para a página inicial.');
+        navigate('/'); // Redireciona para a página inicial
 
       } else {
         console.error('Resposta inválida:', response.data);

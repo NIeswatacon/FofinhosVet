@@ -1,9 +1,18 @@
 // src/pages/Pet/CadastroPet.tsx
 import React, { useState } from 'react';
 import { useNavigate } from 'react-router-dom';
-import api from '../../services/api';
+import api, { API_URLS } from '../../services/api';
+import axios from 'axios';
 import NavBar from '../../components/NavBar/NavBar';
 import './CadastroPet.css';
+
+// Criando uma instância do axios específica para o serviço de pets
+const petApi = axios.create({
+  baseURL: API_URLS.conta,
+  headers: {
+    'Content-Type': 'application/json',
+  },
+});
 
 interface PetData {
   nome: string;
@@ -51,17 +60,21 @@ const CadastroPet: React.FC = () => {
       const user = JSON.parse(userJson);
       const clienteId = user.id;
 
-      const response = await api.post(`/api/contas/clientes/${clienteId}/pets`, formData, {
-  headers: {
-    Authorization: `Bearer ${token}`,
-  },
-});
+      console.log('Enviando dados do pet para a API:', formData);
+      const response = await petApi.post(`/api/contas/clientes/${clienteId}/pets`, formData, {
+        headers: {
+          Authorization: `Bearer ${token}`,
+        },
+      });
+      
+      console.log('Resposta COMPLETA da API de pet:', response);
+      console.log('Status da Resposta da API de pet:', response.status);
+      console.log('Dados da Resposta da API de pet:', response.data);
 
-
-      if (response.status === 201) {
+      if (response.status === 201 || response.status === 200) {
         setSuccess('Pet cadastrado com sucesso!');
         setFormData({ nome: '', especie: '', raca: '', dataNascimento: '' });
-        setTimeout(() => navigate('/clientes'), 1500);
+        setTimeout(() => navigate('/'), 1500);
       } else {
         setError('Erro ao cadastrar o pet. Tente novamente.');
       }

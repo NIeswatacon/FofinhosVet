@@ -264,9 +264,7 @@ const CartaoComponent: React.FC = () => {
             </select>
             <input type="text" name="cpfTitular" placeholder="CPF do Titular" value={form.cpfTitular} onChange={handleInput} maxLength={14} className={formTouched && (!form.cpfTitular || form.cpfTitular.replace(/\D/g, '').length !== 11) ? 'invalid' : ''} />
           </div>
-          <div className="form-row">
-            <input type="number" name="idUsuario" placeholder="ID do Usuário" value={form.idUsuario} onChange={handleInput} min={1} />
-          </div>
+         
           {formError && <div className="form-error">{formError}</div>}
           {successMsg && <div className="form-success">{successMsg}</div>}
           <div className="form-row form-actions">

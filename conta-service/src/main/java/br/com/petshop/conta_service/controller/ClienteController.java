@@ -17,7 +17,7 @@ import java.util.stream.Collectors;
 
 @CrossOrigin(origins = "http://localhost:5173") // Permite CORS para o frontend
 @RestController
-@RequestMapping("/api/contas/clientes")
+@RequestMapping("/api/contas")
 public class ClienteController {
 
     private final ClienteService clienteService;
@@ -80,6 +80,8 @@ public class ClienteController {
             Cliente novoCliente = clienteService.criarCliente(cliente);
             return new ResponseEntity<>(clienteToDTO(novoCliente), HttpStatus.CREATED);
         } catch (Exception e) {
+            System.err.println("Erro ao criar cliente: " + e.getMessage());
+            e.printStackTrace(); // Imprime o stack trace completo no console do servidor
             return new ResponseEntity<>(HttpStatus.INTERNAL_SERVER_ERROR);
         }
     }

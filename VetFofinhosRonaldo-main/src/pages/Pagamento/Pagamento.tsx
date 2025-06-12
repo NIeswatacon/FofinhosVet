@@ -476,19 +476,7 @@ const PagamentoComponent: React.FC = () => {
                 />
               </div>
 
-              <div className="form-group">
-                <label htmlFor="tipoCartao">Tipo do Cartão</label>
-                <select
-                  id="tipoCartao"
-                  name="tipoCartao"
-                  value={formData.tipoCartao ?? 'CREDITO'}
-                  onChange={handleInputChange}
-                  required={formData.formaPagamento === FormaPagamento.CARTAO}
-                >
-                  <option value="CREDITO">Crédito</option>
-                  <option value="DEBITO">Débito</option>
-                </select>
-              </div>
+              
             </>
           )}
           
