@@ -48,7 +48,7 @@ const CardProdutoCarrinho: React.FC<CardProdutoCarrinhoProps> = ({ item, onCarri
       return; // Retorna sem fazer a chamada se o ID não for encontrado
     }
 
-    const apiBaseUrl ='https://microservicevendas-production.up.railway.app/';
+    const apiBaseUrl ='https://microservicevendas-production.up.railway.app';
     let endpoint = '';
     let payload: any = {}; // Usar 'any' temporariamente ou definir tipos mais flexíveis
     const requestConfig: import('axios').AxiosRequestConfig = {

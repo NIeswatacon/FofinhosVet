@@ -15,17 +15,17 @@ interface CardProdutoProps {
 
 // Função auxiliar para obter o ID do usuário do localStorage (local para este componente)
 const getUserId = (): number | null => {
-  const userStr = localStorage.getItem('user');
-  if (!userStr) {
-    return null;
-  }
-  try {
-    const user = JSON.parse(userStr);
-    return user.id || null;
-  } catch (e) {
-    console.error('Erro ao obter ID do usuário no CardProduto:', e);
-    return null;
-  }
+    const userStr = localStorage.getItem('user');
+    if (!userStr) {
+        return null;
+    }
+    try {
+        const user = JSON.parse(userStr);
+        return user.id || null;
+    } catch (e) {
+        console.error('Erro ao obter ID do usuário no CardProduto:', e);
+        return null;
+    }
 };
 
 const CardProduto: React.FC<CardProdutoProps> = ({ produto, onProdutoAdicionado }) => {
@@ -40,49 +40,84 @@ const CardProduto: React.FC<CardProdutoProps> = ({ produto, onProdutoAdicionado 
     };
 
     const handleAdicionarAoCarrinho = async () => {
-        if (isAdding) return; // Previne múltiplas submissões
+        if (isAdding) return;
 
         setIsAdding(true);
 
-        const idUsuario = getUserId(); // Obtendo o ID do localStorage
+        const idUsuario = getUserId();
 
         if (!idUsuario) {
             console.error("ID do usuário não encontrado no localStorage para adicionar ao carrinho.");
             setIsAdding(false);
-            return; // Retorna sem fazer a chamada se o ID não for encontrado
+            return;
         }
 
         const payload: AdicionarAoCarrinhoPayload = {
-            idCliente: idUsuario, // Alterado o nome do campo para idCliente
+            idCliente: idUsuario,
             idProduto: produto.id,
             quantidade: 1,
         };
 
-        console.log('[CardProduto] Tentando adicionar ao carrinho, payload:', payload, 'X-User-ID:', idUsuario);
+        console.log('[CardProduto] Iniciando adição ao carrinho...');
+        console.log('[CardProduto] Payload:', payload);
+        console.log('[CardProduto] Headers:', {
+            'Content-Type': 'application/json',
+            'Accept': 'application/json',
+            'X-User-ID': idUsuario.toString()
+        });
 
         try {
-            // Corrigido o endpoint para corresponder à API de adicionar produto ao carrinho
-           const response = await axios.post<ApiResponse<CarrinhoDetalhado>>(
-                `${API_URLS.vendas}/carrinho/adicionar`, // Ajuste o endpoint se necessário, API_URLS.vendas já deve incluir a base
+            const apiUrl = 'https://microservicevendas-production.up.railway.app/carrinho/adicionar';
+            console.log('[CardProduto] Enviando requisição para:', apiUrl);
+
+            // Adicionar timeout e validateStatus
+            const response = await axios.post<ApiResponse<CarrinhoDetalhado>>(
+                apiUrl,
                 payload,
-                { headers: { 'X-User-ID': idUsuario.toString() } } // Usar o ID do localStorage no header (mantido por precaução)
+                {
+                    headers: {
+                        'Content-Type': 'application/json',
+                        'Accept': 'application/json',
+                        'X-User-ID': idUsuario.toString()
+                    },
+                    timeout: 10000, // 10 segundos de timeout
+                    validateStatus: (status) => status < 500 // Aceita qualquer status < 500
+                }
             );
+
+            console.log('[CardProduto] Resposta recebida:', response.data);
+
             const result = response.data;
+
             if (result.success && result.data) {
-                console.log('[CardProduto] Produto adicionado com sucesso:', result.data);
+                console.log('[CardProduto] Produto adicionado com sucesso!');
+                console.log('[CardProduto] Dados do carrinho atualizado:', result.data);
                 onProdutoAdicionado(result.data);
-                // TODO: Adicionar feedback visual para o usuário (ex: toast)
             } else {
-                console.error('[CardProduto] Erro ao adicionar produto (API success:false):', result.message);
-                // TODO: Adicionar feedback de erro para o usuário
+                console.error('[CardProduto] Erro na resposta da API:', result.message);
+                alert('Erro ao adicionar produto ao carrinho: ' + result.message);
             }
         } catch (error) {
-            console.error('[CardProduto] Falha ao adicionar produto ao carrinho (catch):', error);
-            if (axios.isAxiosError(error) && error.response) {
-                console.error('[CardProduto] Error response data:', error.response.data);
-                console.error('[CardProduto] Error response status:', error.response.status);
+            console.error('[CardProduto] Erro ao adicionar produto:', error);
+            if (axios.isAxiosError(error)) {
+                if (error.code === 'ECONNABORTED') {
+                    console.error('[CardProduto] Timeout na requisição');
+                    alert('O servidor demorou muito para responder. Por favor, tente novamente.');
+                } else if (error.code === 'ERR_NETWORK') {
+                    console.error('[CardProduto] Erro de conexão:', error.message);
+                    alert('Não foi possível conectar ao servidor. Verifique sua conexão e tente novamente.');
+                } else {
+                    console.error('[CardProduto] Detalhes do erro:', {
+                        message: error.message,
+                        response: error.response?.data,
+                        status: error.response?.status,
+                        headers: error.response?.headers
+                    });
+                    alert('Erro ao adicionar produto ao carrinho: ' + (error.response?.data?.message || error.message));
+                }
+            } else {
+                alert('Erro ao adicionar produto ao carrinho. Por favor, tente novamente.');
             }
-            // TODO: Adicionar feedback de erro para o usuário
         } finally {
             setIsAdding(false);
         }
