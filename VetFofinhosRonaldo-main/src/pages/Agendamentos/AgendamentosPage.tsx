@@ -4,7 +4,7 @@ import { API_URLS } from '../../services/api';
 import styles from './AgendamentosPage.module.css'; // Verifique o nome real do seu arquivo .css
 import NavBar from '../../components/NavBar/NavBar';
 
-const API_AGENDAMENTOS_BASE_URL = `${API_URLS.servicos}/api/agendamentos`;
+const API_AGENDAMENTOS_BASE_URL = `${API_URLS.servicos}/agendamentos`;
 const API_CONTAS_BASE_URL = `${API_URLS.conta}/api/contas`;
 
 export const ServicoEnumFrontend = {
@@ -214,26 +214,40 @@ export const AgendamentosPage = () => {
     setIsSubmitting(true);
     setError(null);
     setSuccessMessage(null);
-    if (!loggedInCliente || !formData.nomeCliente || !formData.petNome || !formData.servico || !formData.data) {
-      setError('Por favor, preencha todos os campos obrigatórios (Pet, Serviço, Data). Cliente deve estar carregado.');
+
+    // Validação
+    if (!loggedInCliente || !selectedPetIdForDropdown || !formData.servico || !formData.data) {
+      setError('Cliente, Pet, Serviço e Data são campos obrigatórios.');
       setIsSubmitting(false);
       return;
     }
 
+    // O backend espera um payload com idPet, idFuncionario (opcional), data e servico.
+    // O seu AgendamentoRequestDTO no backend tem esses campos.
     const payload = {
-      idPet: parseInt(selectedPetIdForDropdown, 10),
+      idPet: parseInt(selectedPetIdForDropdown, 10), // O ID do Pet selecionado no dropdown
       servico: formData.servico,
       data: formData.data,
-      nomeFuncionario: formData.nomeFuncionario || undefined,
+      // Mesmo que o nome seja opcional, podemos enviar o ID se o tivermos no futuro.
+      // Por agora, enviaremos o nome conforme o backend parece usar.
+      nomeFuncionario: formData.nomeFuncionario,
+      // O idFuncionario não está sendo coletado, então não o enviamos. O backend não exige.
     };
 
     try {
+      // A chamada para a API de agendamentos está correta, usando o `servicos-service`
+      // Vamos garantir que a URL base esteja correta (sem o /api/agendamentos duplicado)
+      // A constante API_AGENDAMENTOS_BASE_URL já deve ser 'http://<seu_servico_de_agendamentos>/api/agendamentos'
       await axios.post(API_AGENDAMENTOS_BASE_URL, payload, {
         headers: {
+          // O backend usa este header para validar o cliente. Está correto.
           'X-User-ID': loggedInCliente.id.toString(),
         },
       });
+
       setSuccessMessage('Agendamento criado com sucesso!');
+      
+      // Limpa o formulário após o sucesso, mas mantém o nome do cliente
       setFormData({
         nomeCliente: loggedInCliente?.nome || '',
         petNome: '',
@@ -243,11 +257,19 @@ export const AgendamentosPage = () => {
         nomeFuncionario: '',
       });
       setSelectedPetIdForDropdown('');
+
+      // Re-busca os agendamentos para atualizar a lista na tela
       if (loggedInCliente?.id) {
-        fetchAgendamentos(); // Re-busca os agendamentos
+        fetchAgendamentos();
       }
+
     } catch (err) {
-      setError('Falha ao criar agendamento. Verifique os dados e tente novamente.');
+      if (axios.isAxiosError(err) && err.response) {
+        // Se o backend retornar uma mensagem de erro específica, mostre-a.
+        setError(err.response.data.message || 'Falha ao criar agendamento. Verifique os dados e tente novamente.');
+      } else {
+        setError('Falha ao criar agendamento. Verifique sua conexão e tente novamente.');
+      }
       console.error(err);
     } finally {
       setIsSubmitting(false);
