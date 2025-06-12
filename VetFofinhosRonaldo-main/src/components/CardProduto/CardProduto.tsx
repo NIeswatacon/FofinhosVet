@@ -63,7 +63,7 @@ const CardProduto: React.FC<CardProdutoProps> = ({ produto, onProdutoAdicionado 
         try {
             // Corrigido o endpoint para corresponder à API de adicionar produto ao carrinho
            const response = await axios.post<ApiResponse<CarrinhoDetalhado>>(
-                `${API_URLS.vendas}/carrinho/adicionar`, // Ajuste o endpoint se necessário, API_URLS.vendas já deve incluir a base
+                `${API_URLS.vendas}/carrinho/adicionar`, // Usando API_URLS.vendas do api.ts
                 payload,
                 { headers: { 'X-User-ID': idUsuario.toString() } } // Usar o ID do localStorage no header (mantido por precaução)
             );

@@ -3,6 +3,7 @@ import GridProdutosCarrinho from '../GridProdutoCarrinho/GridProdutoCarrinho';
 import axios from 'axios';
 import type { CarrinhoDetalhado, ApiResponse } from '../../types/index';
 import styles from './ModalCarrinho.module.css'; // Importar o CSS Module
+import { API_URLS } from '../../services/api'; // Importar API_URLS do api.ts (caminho corrigido)
 
 interface ModalCarrinhoProps {
   isVisible: boolean;
@@ -45,7 +46,7 @@ const ModalCarrinho: React.FC<ModalCarrinhoProps> = ({ isVisible, onClose, carri
     setError(null);
     try {
       const response = await axios.get<ApiResponse<CarrinhoDetalhado>>(
-        `https://microservicevendas-production.up.railway.app/carrinho/${idClienteFromStorage}`,
+        `${API_URLS.vendas}/carrinho/${idClienteFromStorage}`, // Usando API_URLS.vendas do api.ts
         {
           headers: {
             'Content-Type': 'application/json',
@@ -70,7 +71,7 @@ const ModalCarrinho: React.FC<ModalCarrinhoProps> = ({ isVisible, onClose, carri
           }
         }
         console.log('[ModalCarrinho] Carrinho recebido do GET:', carrinhoData); // Log para depuração
-        setCarrinho(carrinhoData);
+        // setCarrinho(carrinhoData); // Removido para evitar loop
         onCarrinhoChange(carrinhoData);
       } else {
         console.error('[ModalCarrinho] Falha ao buscar carrinho (API success:false):', result.message);
