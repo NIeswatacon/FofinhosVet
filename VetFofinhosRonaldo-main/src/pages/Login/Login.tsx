@@ -3,7 +3,8 @@ import { useNavigate } from 'react-router-dom';
 import './Login.css';
 import '../Home.css';
 import NavBar from '../../components/NavBar/NavBar';
-import api from '../../services/api';
+import api, { API_URLS } from '../../services/api';
+import axios from 'axios';
 
 const PawsBackground = () => {
   const [dimensions, setDimensions] = useState({ width: 800, height: 600 });
@@ -86,9 +87,9 @@ const Login: React.FC = () => {
     console.log('Senha:', senha);
 
     try {
-      // Faz a requisição de login
-      console.log('Enviando requisição para:', '/api/contas/auth/login');
-      const response = await api.post('/api/contas/auth/login', {
+      // Faz a requisição de login usando a URL específica do serviço de conta
+      console.log('Enviando requisição para:', `${API_URLS.conta}/api/contas/auth/login`);
+      const response = await axios.post(`${API_URLS.conta}/api/contas/auth/login`, {
         email,
         senha
       });

@@ -3,6 +3,7 @@ import GridProdutosCarrinho from '../GridProdutoCarrinho/GridProdutoCarrinho';
 import axios from 'axios';
 import type { CarrinhoDetalhado, ApiResponse } from '../../types/index';
 import styles from './ModalCarrinho.module.css'; // Importar o CSS Module
+import { API_URLS } from '../../services/api'; // Importar API_URLS do api.ts (caminho corrigido)
 
 interface ModalCarrinhoProps {
   isVisible: boolean;
@@ -46,7 +47,7 @@ const ModalCarrinho: React.FC<ModalCarrinhoProps> = ({ isVisible, onClose, carri
     try {
       console.log('[ModalCarrinho] Buscando carrinho para o usuário:', idClienteFromStorage);
       const response = await axios.get<ApiResponse<CarrinhoDetalhado>>(
-        `https://microservicevendas-production.up.railway.app/carrinho`,
+        `https://microservicevendas-production.up.railway.app/carrinho/${idClienteFromStorage}`,
         {
           headers: {
             'Content-Type': 'application/json',
@@ -68,18 +69,13 @@ const ModalCarrinho: React.FC<ModalCarrinhoProps> = ({ isVisible, onClose, carri
             total: parseFloat(String(carrinhoData.total || 0)),
             itens: (carrinhoData.itens || []).map(item => ({
               ...item,
-              preco: parseFloat(String(item.preco || 0)),
-              quantidade: parseInt(String(item.quantidade || 0))
-            }))
-          };
-          console.log('[ModalCarrinho] Carrinho processado:', carrinhoData);
-          setCarrinho(carrinhoData);
-          onCarrinhoChange(carrinhoData);
-        } else {
-          console.log('[ModalCarrinho] Carrinho vazio retornado pela API');
-          setCarrinho(null);
-          onCarrinhoChange(null);
+              preco: parseFloat(String(item.preco))
+            }));
+          }
         }
+        console.log('[ModalCarrinho] Carrinho recebido do GET:', carrinhoData); // Log para depuração
+        setCarrinho(carrinhoData);
+        onCarrinhoChange(carrinhoData);
       } else {
         console.error('[ModalCarrinho] Falha ao buscar carrinho:', result.message);
         setError(result.message || 'Falha ao buscar carrinho.');
