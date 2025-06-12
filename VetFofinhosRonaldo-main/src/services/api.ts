@@ -5,7 +5,7 @@ import type { AxiosError, InternalAxiosRequestConfig } from 'axios';
 // Configuração das URLs base para cada serviço
 const API_URLS = {
   servicos: 'http://localhost:8081',
-  vendas: 'http://localhost:8082',
+  vendas: 'https://microservicevendas-production.up.railway.app',
   pagamento: 'http://localhost:8085',
   conta: 'http://localhost:8084'
 };

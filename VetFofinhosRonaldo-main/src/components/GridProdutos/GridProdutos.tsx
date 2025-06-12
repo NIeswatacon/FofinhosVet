@@ -11,6 +11,20 @@ interface GridProdutosProps {
   onCarrinhoAtualizado: (carrinho: CarrinhoDetalhado) => void;
 }
 
+const getUserId = (): number | null => {
+  const userStr = localStorage.getItem('user');
+  if (!userStr) {
+    return null;
+  }
+  try {
+    const user = JSON.parse(userStr);
+    return user.id || null;
+  } catch (e) {
+    console.error('Erro ao obter ID do usuário no ModalCarrinho:', e);
+    return null;
+  }
+};
+
 const GridProdutos: React.FC<GridProdutosProps> = ({ idCliente, onCarrinhoAtualizado }) => {
   const [produtos, setProdutos] = useState<ProdutoBase[]>([]);
   const [loading, setLoading] = useState<boolean>(true);
@@ -58,7 +72,6 @@ const GridProdutos: React.FC<GridProdutosProps> = ({ idCliente, onCarrinhoAtuali
         <CardProduto
           key={produto.id}
           produto={produto}
-          idCliente={idCliente}
           onProdutoAdicionado={onCarrinhoAtualizado}
         />
       ))}

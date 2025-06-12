@@ -12,7 +12,7 @@ interface ModalCarrinhoProps {
   onCarrinhoChange: (carrinho: CarrinhoDetalhado | null) => void; // Notifica o pai sobre mudanças
 }
 
-// Função auxiliar para obter o ID do usuário do localStorage
+// Função auxiliar para obter o ID do usuário do localStorage (local para este componente)
 const getUserId = (): number | null => {
   const userStr = localStorage.getItem('user');
   if (!userStr) {
@@ -30,7 +30,7 @@ const getUserId = (): number | null => {
 const ModalCarrinho: React.FC<ModalCarrinhoProps> = ({ isVisible, onClose, carrinhoPai, onCarrinhoChange }) => {
   // O estado local 'carrinho' agora reflete o 'carrinhoPai' ou o resultado de uma busca inicial
   const [carrinho, setCarrinho] = useState<CarrinhoDetalhado | null>(carrinhoPai);
-  const [loading, setLoading] = useState<boolean>(!carrinhoPai); // Inicia loading se não houver carrinhoPai
+  const [loading, setLoading] = useState<boolean>(false);
   const [error, setError] = useState<string | null>(null);
 
   const fetchCarrinho = useCallback(async () => {
@@ -47,12 +47,11 @@ const ModalCarrinho: React.FC<ModalCarrinhoProps> = ({ isVisible, onClose, carri
     try {
       console.log('[ModalCarrinho] Buscando carrinho para o usuário:', idClienteFromStorage);
       const response = await axios.get<ApiResponse<CarrinhoDetalhado>>(
-        `https://microservicevendas-production.up.railway.app/carrinho/${idClienteFromStorage}`,
+        `${API_URLS.vendas}/carrinho/${idClienteFromStorage}`,
         {
           headers: {
             'Content-Type': 'application/json',
-            'Accept': 'application/json',
-            'X-User-ID': idClienteFromStorage.toString()
+            'Accept': 'application/json'
           }
         }
       );
@@ -63,19 +62,22 @@ const ModalCarrinho: React.FC<ModalCarrinhoProps> = ({ isVisible, onClose, carri
       if (result.success) {
         let carrinhoData = result.data;
         if (carrinhoData) {
-          // Garantir que os valores numéricos sejam tratados corretamente
           carrinhoData = {
             ...carrinhoData,
             total: parseFloat(String(carrinhoData.total || 0)),
             itens: (carrinhoData.itens || []).map(item => ({
               ...item,
-              preco: parseFloat(String(item.preco))
+              preco: parseFloat(String(item.preco || 0))
             }))
           };
+          console.log('[ModalCarrinho] Carrinho processado:', carrinhoData);
+          setCarrinho(carrinhoData);
+          onCarrinhoChange(carrinhoData);
+        } else {
+          console.log('[ModalCarrinho] Nenhum dado do carrinho recebido');
+          setCarrinho(null);
+          onCarrinhoChange(null);
         }
-        console.log('[ModalCarrinho] Carrinho recebido do GET:', carrinhoData); // Log para depuração
-        setCarrinho(carrinhoData);
-        onCarrinhoChange(carrinhoData);
       } else {
         console.error('[ModalCarrinho] Falha ao buscar carrinho:', result.message);
         setError(result.message || 'Falha ao buscar carrinho.');
@@ -100,35 +102,34 @@ const ModalCarrinho: React.FC<ModalCarrinhoProps> = ({ isVisible, onClose, carri
   }, [onCarrinhoChange]);
 
   useEffect(() => {
-    // Atualiza o estado interno do modal se a prop carrinhoPai mudar
-    setCarrinho(carrinhoPai);
-  }, [carrinhoPai]);
+    if (isVisible) {
+      fetchCarrinho();
+    }
+  }, [isVisible, fetchCarrinho]);
 
   useEffect(() => {
-    if (isVisible) {
-      // Se o modal se torna visível e não temos um carrinho (ou o carrinhoPai é null),
-      // então fazemos a busca inicial.
-      // Se o modal se torna visível:
-      // 1. Se não há carrinhoPai (primeira abertura, talvez) OU
-      // 2. Se o carrinhoPai existe, mas seu idUsuario não bate com o idCliente atual (mudança de usuário, improvável neste fluxo mas bom para robustez)
-      // então, busca o carrinho.
-      const currentUserId = getUserId();
-      if (!carrinhoPai || (carrinhoPai && carrinhoPai.idUsuario !== currentUserId)) {
-        fetchCarrinho();
-      }
+    if (carrinhoPai) {
+      const carrinhoProcessado: CarrinhoDetalhado = {
+        ...carrinhoPai,
+        total: parseFloat(String(carrinhoPai.total)),
+        itens: carrinhoPai.itens.map(item => ({
+          ...item,
+          preco: parseFloat(String(item.preco))
+        })),
+      };
+      setCarrinho(carrinhoProcessado);
     }
-  }, [isVisible, carrinhoPai, fetchCarrinho]);
+  }, [carrinhoPai]);
 
   const handleCarrinhoAtualizadoInternamente = (carrinhoAtualizado: CarrinhoDetalhado | null) => {
     if (carrinhoAtualizado) {
       const carrinhoProcessado: CarrinhoDetalhado = {
         ...carrinhoAtualizado,
-        total: parseFloat(String(carrinhoAtualizado.total || 0)),
+        total: parseFloat(String(carrinhoAtualizado.total)), // Garantir que total seja número
         itens: carrinhoAtualizado.itens.map(item => ({
           ...item,
-          preco: parseFloat(String(item.preco || 0)),
-          quantidade: parseInt(String(item.quantidade || 0))
-        }))
+          preco: parseFloat(String(item.preco)) // Garantir que preco seja número
+        })),
       };
       setCarrinho(carrinhoProcessado);
       onCarrinhoChange(carrinhoProcessado); // Passa o carrinho já processado para o pai

@@ -39,21 +39,21 @@ const CardProdutoCarrinho: React.FC<CardProdutoCarrinhoProps> = ({ item, onCarri
       await handleRemoverItemCompletamenteInternal();
       return;
     }
-    
+
     const idCliente = getUserId(); // Obtendo o ID do localStorage
-    
+
     if (!idCliente) {
       console.error("ID do cliente não fornecido no localStorage.");
       setIsUpdating(false);
       return; // Retorna sem fazer a chamada se o ID não for encontrado
     }
 
-    const apiBaseUrl ='https://microservicevendas-production.up.railway.app';
+    const apiBaseUrl = 'https://microservicevendas-production.up.railway.app/';
     let endpoint = '';
     let payload: any = {}; // Usar 'any' temporariamente ou definir tipos mais flexíveis
     const requestConfig: import('axios').AxiosRequestConfig = {
       headers: { 'X-User-ID': idCliente.toString() }
-    }; 
+    };
 
     if (incremento < 0) { // Diminuindo
       endpoint = `${apiBaseUrl}/carrinho/remover`;
@@ -103,7 +103,7 @@ const CardProdutoCarrinho: React.FC<CardProdutoCarrinhoProps> = ({ item, onCarri
     setIsUpdating(true);
 
     const idCliente = getUserId(); // Obtendo o ID do localStorage
-    
+
     if (!idCliente) {
       console.error("ID do cliente não fornecido no localStorage para remover item.");
       setIsUpdating(false);
@@ -159,3 +159,7 @@ const CardProdutoCarrinho: React.FC<CardProdutoCarrinhoProps> = ({ item, onCarri
 };
 
 export default CardProdutoCarrinho;
+
+
+
+

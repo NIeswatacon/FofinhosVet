@@ -96,34 +96,34 @@ const Vendas: React.FC = () => {
       <IconeCarrinho
         onClick={toggleModalCarrinho}
         itemCount={calcularTotalItensCarrinho()}
-        isModalVisible={modalCarrinhoVisivel} // Passa o estado de visibilidade do modal
+        isModalVisible={modalCarrinhoVisivel}
       />
 
       <ModalCarrinho
         isVisible={modalCarrinhoVisivel}
         onClose={toggleModalCarrinho}
-        // idCliente={ID_CLIENTE_MOCK} // Removido
-        carrinhoPai={carrinho} // Passa o carrinho do estado do Vendas
-        onCarrinhoChange={handleCarrinhoAtualizado} // Renomeado para onCarrinhoChange para corresponder à prop
+        carrinhoPai={carrinho}
+        onCarrinhoChange={handleCarrinhoAtualizado}
       />
 
-      {/* 
-        A NavBar já está sendo renderizada pelo MainLayout.
-        O IconeCarrinho está posicionado de forma fixa.
-        O conteúdo principal da página de Vendas começa aqui.
-      */}
-      <div style={{ padding: '20px', marginTop: '20px' }}> {/* Adiciona um espaçamento geral */}
-        <h2 style={{ 
-          textAlign: 'left', 
-          marginBottom: '25px', 
-          fontSize: '1.8rem', 
+      <div style={{ padding: '20px', marginTop: '20px' }}>
+        <h2 style={{
+          textAlign: 'left',
+          marginBottom: '25px',
+          fontSize: '1.8rem',
           color: '#333',
-          fontWeight: '500' 
+          fontWeight: '500'
         }}>Nossos Produtos</h2>
-        <GridProdutos
-          idCliente={currentUserId || 0} // Passando o ID do usuário do estado (0 se null, ajustar conforme necessidade)
-          onCarrinhoAtualizado={handleCarrinhoAtualizado}
-        />
+        {currentUserId ? (
+          <GridProdutos
+            idCliente={currentUserId}
+            onCarrinhoAtualizado={handleCarrinhoAtualizado}
+          />
+        ) : (
+          <div style={{ textAlign: 'center', padding: '20px' }}>
+            Por favor, faça login para ver os produtos.
+          </div>
+        )}
       </div>
     </div>
   );

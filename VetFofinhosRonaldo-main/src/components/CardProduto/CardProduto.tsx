@@ -8,6 +8,57 @@ import styles from './CardProduto.module.css'; // Importar o CSS Module
 import type { ProdutoBase, AdicionarAoCarrinhoPayload, CarrinhoDetalhado, ApiResponse } from '../../types/index';
 import { API_URLS } from '../../services/api';
 
+// Configuração global do Axios
+const api = axios.create({
+    baseURL: 'https://microservicevendas-production.up.railway.app',
+    timeout: 30000,
+    headers: {
+        'Content-Type': 'application/json',
+        'Accept': 'application/json'
+    }
+});
+
+// Interceptor para logging
+api.interceptors.request.use(request => {
+    console.log('[Axios] Iniciando requisição:', {
+        url: request.url,
+        method: request.method,
+        headers: request.headers,
+        data: request.data
+    });
+    return request;
+});
+
+api.interceptors.response.use(
+    response => {
+        console.log('[Axios] Resposta recebida:', {
+            status: response.status,
+            data: response.data
+        });
+        return response;
+    },
+    error => {
+        if (error.code === 'ECONNABORTED') {
+            console.error('[Axios] Timeout na requisição. Verificando se o servidor está acessível...');
+            // Tenta fazer uma requisição GET simples para verificar se o servidor está acessível
+            fetch('https://microservicevendas-production.up.railway.app/health')
+                .then(response => {
+                    console.log('[Axios] Servidor está acessível:', response.status);
+                })
+                .catch(err => {
+                    console.error('[Axios] Servidor não está acessível:', err);
+                });
+        }
+        console.error('[Axios] Erro na requisição:', {
+            message: error.message,
+            code: error.code,
+            config: error.config,
+            response: error.response
+        });
+        return Promise.reject(error);
+    }
+);
+
 interface CardProdutoProps {
     produto: ProdutoBase;
     onProdutoAdicionado: (carrinho: CarrinhoDetalhado) => void;
@@ -52,69 +103,68 @@ const CardProduto: React.FC<CardProdutoProps> = ({ produto, onProdutoAdicionado 
             return;
         }
 
-        const payload: AdicionarAoCarrinhoPayload = {
-            idCliente: idUsuario,
-            idProduto: produto.id,
-            quantidade: 1,
+        // Garantir que idUsuario seja um número
+        const idCliente = Number(idUsuario);
+        if (isNaN(idCliente)) {
+            console.error("ID do usuário inválido:", idUsuario);
+            setIsAdding(false);
+            return;
+        }
+
+        // Validar o produto
+        if (!produto || !produto.id) {
+            console.error("Produto inválido:", produto);
+            setIsAdding(false);
+            return;
+        }
+
+        // Criar payload exatamente como no Postman
+        const payload = {
+            idCliente: idCliente,
+            idProduto: Number(produto.id),
+            quantidade: 1
         };
 
         console.log('[CardProduto] Iniciando adição ao carrinho...');
-        console.log('[CardProduto] Payload:', payload);
-        console.log('[CardProduto] Headers:', {
-            'Content-Type': 'application/json',
-            'Accept': 'application/json',
-            'X-User-ID': idUsuario.toString()
-        });
+        console.log('[CardProduto] Payload:', JSON.stringify(payload, null, 2));
 
         try {
-            const apiUrl = 'https://microservicevendas-production.up.railway.app/carrinho/adicionar';
-            console.log('[CardProduto] Enviando requisição para:', apiUrl);
-
-            // Adicionar timeout e validateStatus
-            const response = await axios.post<ApiResponse<CarrinhoDetalhado>>(
-                apiUrl,
+            // Fazer a requisição exatamente como no Postman
+            const response = await axios.post(
+                'https://microservicevendas-production.up.railway.app/carrinho/adicionar',
                 payload,
                 {
                     headers: {
                         'Content-Type': 'application/json',
-                        'Accept': 'application/json',
-                        'X-User-ID': idUsuario.toString()
-                    },
-                    timeout: 10000, // 10 segundos de timeout
-                    validateStatus: (status) => status < 500 // Aceita qualquer status < 500
+                        'Accept': 'application/json'
+                    }
                 }
             );
 
             console.log('[CardProduto] Resposta recebida:', response.data);
 
-            const result = response.data;
-
-            if (result.success && result.data) {
+            if (response.data.success && response.data.data) {
                 console.log('[CardProduto] Produto adicionado com sucesso!');
-                console.log('[CardProduto] Dados do carrinho atualizado:', result.data);
-                onProdutoAdicionado(result.data);
+                onProdutoAdicionado(response.data.data);
             } else {
-                console.error('[CardProduto] Erro na resposta da API:', result.message);
-                alert('Erro ao adicionar produto ao carrinho: ' + result.message);
+                console.error('[CardProduto] Erro na resposta da API:', response.data.message);
+                alert('Erro ao adicionar produto ao carrinho: ' + response.data.message);
             }
         } catch (error) {
             console.error('[CardProduto] Erro ao adicionar produto:', error);
             if (axios.isAxiosError(error)) {
-                if (error.code === 'ECONNABORTED') {
-                    console.error('[CardProduto] Timeout na requisição');
-                    alert('O servidor demorou muito para responder. Por favor, tente novamente.');
-                } else if (error.code === 'ERR_NETWORK') {
-                    console.error('[CardProduto] Erro de conexão:', error.message);
-                    alert('Não foi possível conectar ao servidor. Verifique sua conexão e tente novamente.');
-                } else {
-                    console.error('[CardProduto] Detalhes do erro:', {
-                        message: error.message,
-                        response: error.response?.data,
-                        status: error.response?.status,
-                        headers: error.response?.headers
-                    });
-                    alert('Erro ao adicionar produto ao carrinho: ' + (error.response?.data?.message || error.message));
-                }
+                console.error('[CardProduto] Detalhes do erro:', {
+                    message: error.message,
+                    response: error.response?.data,
+                    status: error.response?.status,
+                    config: {
+                        url: error.config?.url,
+                        method: error.config?.method,
+                        headers: error.config?.headers,
+                        data: error.config?.data
+                    }
+                });
+                alert('Erro ao adicionar produto ao carrinho: ' + (error.response?.data?.message || error.message));
             } else {
                 alert('Erro ao adicionar produto ao carrinho. Por favor, tente novamente.');
             }

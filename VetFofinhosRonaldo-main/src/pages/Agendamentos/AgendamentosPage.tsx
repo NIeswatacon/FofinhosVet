@@ -62,7 +62,7 @@ export const AgendamentosPage = () => {
   const [isSubmitting, setIsSubmitting] = useState(false); // Estado para o loading do submit
   const [error, setError] = useState<string | null>(null);
   const [successMessage, setSuccessMessage] = useState<string | null>(null);
-    // Função para obter o ID do usuário do localStorage
+  // Função para obter o ID do usuário do localStorage
   const getUserId = (): number | null => {
     const userStr = localStorage.getItem('user');
     if (!userStr) {
@@ -86,10 +86,10 @@ export const AgendamentosPage = () => {
     } else {
       setError("Nenhum cliente logado. Por favor, faça o login para acessar esta página.");
       // Garante que estados dependentes sejam limpos se não houver usuário
-       setClienteIdFromAuth(null);
-       setLoggedInCliente(null);
-       setAgendamentos([]);
-       setFormData({
+      setClienteIdFromAuth(null);
+      setLoggedInCliente(null);
+      setAgendamentos([]);
+      setFormData({
         nomeCliente: '',
         petNome: '',
         servico: ServicoEnumFrontend.BANHO,
@@ -97,29 +97,29 @@ export const AgendamentosPage = () => {
         dataHoraInput: '',
         nomeFuncionario: '',
       });
-       setPets([]);
+      setPets([]);
     }
-    }, []); // Executa apenas uma vez na montagem
+  }, []); // Executa apenas uma vez na montagem
 
   const fetchAgendamentos = async () => {
-  // A verificação do loggedInCliente já garante que teremos o ID.
-  if (!loggedInCliente) return;
+    // A verificação do loggedInCliente já garante que teremos o ID.
+    if (!loggedInCliente) return;
 
-  setIsLoading(true);
-  setError(null);
-  try {
-    // Usando o novo endpoint otimizado do backend
-    const response = await axios.get<Agendamento[]>(`${API_AGENDAMENTOS_BASE_URL}/cliente/${loggedInCliente.id}`);
-    setAgendamentos(response.data);
-  } catch (err) {
-    setError('Falha ao buscar agendamentos.');
-    console.error(err);
-  } finally {
-    setIsLoading(false);
-  }
-};
+    setIsLoading(true);
+    setError(null);
+    try {
+      // Usando o novo endpoint otimizado do backend
+      const response = await axios.get<Agendamento[]>(`${API_AGENDAMENTOS_BASE_URL}/cliente/${loggedInCliente.id}`);
+      setAgendamentos(response.data);
+    } catch (err) {
+      setError('Falha ao buscar agendamentos.');
+      console.error(err);
+    } finally {
+      setIsLoading(false);
+    }
+  };
 
-    const fetchLoggedInClienteData = async (id: number) => {
+  const fetchLoggedInClienteData = async (id: number) => {
     if (!id) {
       setError("ID do cliente logado não definido.");
       setLoggedInCliente(null);
@@ -127,7 +127,7 @@ export const AgendamentosPage = () => {
     }
     setIsLoading(true);
     try {
-      const response = await axios.get<Cliente>(`${API_CONTAS_BASE_URL}/clientes/${id}`);
+      const response = await axios.get<Cliente>(`${API_CONTAS_BASE_URL}/${id}`);
       setLoggedInCliente(response.data);
       // Pré-preenche nomeCliente no formData
       setFormData(prev => ({ ...prev, nomeCliente: response.data.nome }));
@@ -141,8 +141,8 @@ export const AgendamentosPage = () => {
     }
   };
 
-   const fetchPetsDoCliente = async (clienteId: number) => {
-       if (!clienteId) {
+  const fetchPetsDoCliente = async (clienteId: number) => {
+    if (!clienteId) {
       setPets([]);
       setSelectedPetIdForDropdown('');
       setFormData(prev => ({ ...prev, petNome: '' }));
@@ -162,7 +162,7 @@ export const AgendamentosPage = () => {
       console.error('Erro ao buscar pets:', err);
       setPets([]);
     }
-    };
+  };
 
   useEffect(() => {
     if (clienteIdFromAuth) {
@@ -172,8 +172,8 @@ export const AgendamentosPage = () => {
     // e limpou os estados relevantes (loggedInCliente, pets, formData, agendamentos).
   }, [clienteIdFromAuth]); // Dependência no ID do cliente obtido da "autenticação"
 
-   useEffect(() => {
-        if (loggedInCliente && loggedInCliente.id) {
+  useEffect(() => {
+    if (loggedInCliente && loggedInCliente.id) {
       fetchPetsDoCliente(loggedInCliente.id);
       fetchAgendamentos(); // fetchAgendamentos usará loggedInCliente.nome para filtrar
     } else {
@@ -181,7 +181,7 @@ export const AgendamentosPage = () => {
       // limpa os dados dependentes.
       setPets([]);
       setSelectedPetIdForDropdown('');
-            setFormData(prev => ({
+      setFormData(prev => ({
         ...prev,
         nomeCliente: '', // Limpar nome do cliente no formulário
         petNome: ''      // Limpar nome do pet no formulário
@@ -192,7 +192,7 @@ export const AgendamentosPage = () => {
 
   const handleInputChange = (e: ChangeEvent<HTMLInputElement | HTMLSelectElement | HTMLTextAreaElement>) => {
     const { name, value } = e.target;
-        if (name === 'dataHoraInput') {
+    if (name === 'dataHoraInput') {
       setFormData(prev => ({ ...prev, dataHoraInput: value, data: value ? value.split('T')[0] : '' }));
     } else {
       setFormData(prev => ({ ...prev, [name]: value }));
@@ -214,7 +214,7 @@ export const AgendamentosPage = () => {
     setIsSubmitting(true);
     setError(null);
     setSuccessMessage(null);
-    if (!loggedInCliente || !formData.nomeCliente || !formData.petNome || !formData.servico || !formData.data ) {
+    if (!loggedInCliente || !formData.nomeCliente || !formData.petNome || !formData.servico || !formData.data) {
       setError('Por favor, preencha todos os campos obrigatórios (Pet, Serviço, Data). Cliente deve estar carregado.');
       setIsSubmitting(false);
       return;
@@ -228,10 +228,11 @@ export const AgendamentosPage = () => {
     };
 
     try {
-      await axios.post(API_AGENDAMENTOS_BASE_URL, payload,{ headers: {
-      'X-User-ID': loggedInCliente.id.toString(),
-      },
-    });
+      await axios.post(API_AGENDAMENTOS_BASE_URL, payload, {
+        headers: {
+          'X-User-ID': loggedInCliente.id.toString(),
+        },
+      });
       setSuccessMessage('Agendamento criado com sucesso!');
       setFormData({
         nomeCliente: loggedInCliente?.nome || '',
@@ -295,10 +296,10 @@ export const AgendamentosPage = () => {
 
   // 3. Dados do cliente carregados (loggedInCliente existe) -> Renderiza a página principal
 
-return (
-  <div>
-    <NavBar />
-    <div className={styles.container}>
+  return (
+    <div>
+      <NavBar />
+      <div className={styles.container}>
         <>
           <header className={styles.header}>
             <h1>Agendamentos</h1>
@@ -371,10 +372,10 @@ return (
           </main>
         </>
         {/* O conteúdo principal é renderizado aqui porque loggedInCliente já foi verificado */}
-      <footer className={styles.footer}>
-        <p>&copy; {new Date().getFullYear()} VetFofinhosRonaldo. Todos os direitos reservados.</p>
-      </footer>
+        <footer className={styles.footer}>
+          <p>&copy; {new Date().getFullYear()} VetFofinhosRonaldo. Todos os direitos reservados.</p>
+        </footer>
+      </div>
     </div>
-  </div>
-);
+  );
 }
