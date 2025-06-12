@@ -8,11 +8,25 @@ import type { ItemCarrinhoDetalhado, AdicionarAoCarrinhoPayload, RemoverDoCarrin
 
 interface CardProdutoCarrinhoProps {
   item: ItemCarrinhoDetalhado;
-  idCliente: number;
   onCarrinhoAtualizado: (carrinho: CarrinhoDetalhado | null) => void;
 }
 
-const CardProdutoCarrinho: React.FC<CardProdutoCarrinhoProps> = ({ item, idCliente, onCarrinhoAtualizado }) => {
+// Função auxiliar para obter o ID do usuário do localStorage
+const getUserId = (): number | null => {
+  const userStr = localStorage.getItem('user');
+  if (!userStr) {
+    return null;
+  }
+  try {
+    const user = JSON.parse(userStr);
+    return user.id || null;
+  } catch (e) {
+    console.error('Erro ao obter ID do usuário:', e);
+    return null;
+  }
+};
+
+const CardProdutoCarrinho: React.FC<CardProdutoCarrinhoProps> = ({ item, onCarrinhoAtualizado }) => {
   const [isUpdating, setIsUpdating] = useState(false); // Estado para desabilitar botões durante chamadas API
 
   const handleAlterarQuantidade = async (incremento: number) => {
@@ -25,8 +39,16 @@ const CardProdutoCarrinho: React.FC<CardProdutoCarrinhoProps> = ({ item, idClien
       await handleRemoverItemCompletamenteInternal();
       return;
     }
+    
+    const idCliente = getUserId(); // Obtendo o ID do localStorage
+    
+    if (!idCliente) {
+      console.error("ID do cliente não fornecido no localStorage.");
+      setIsUpdating(false);
+      return; // Retorna sem fazer a chamada se o ID não for encontrado
+    }
 
-    const apiBaseUrl = import.meta.env.VITE_API_BASE_URL || 'http://localhost:8080/api/vendas';
+    const apiBaseUrl ='https://microservicevendas-production.up.railway.app/';
     let endpoint = '';
     let payload: any = {}; // Usar 'any' temporariamente ou definir tipos mais flexíveis
     const requestConfig: import('axios').AxiosRequestConfig = {
@@ -80,13 +102,21 @@ const CardProdutoCarrinho: React.FC<CardProdutoCarrinhoProps> = ({ item, idClien
     if (isUpdating && (item.quantidade + (-1) > 0)) return; // Evita setar se já está em progresso por outra ação
     setIsUpdating(true);
 
+    const idCliente = getUserId(); // Obtendo o ID do localStorage
+    
+    if (!idCliente) {
+      console.error("ID do cliente não fornecido no localStorage para remover item.");
+      setIsUpdating(false);
+      return; // Retorna sem fazer a chamada se o ID não for encontrado
+    }
+
     // Para remover completamente, não enviamos 'quantidade' no payload,
     // ou a API deve interpretar 'quantidade' ausente como remoção total.
     const payload = { idProduto: item.idProduto };
     console.log('[CardProdutoCarrinho] Tentando remover item completamente. Payload:', payload);
     try {
       const response = await axios.post<ApiResponse<CarrinhoDetalhado>>(
-        `http://localhost:8080/api/vendas/carrinho/remover`,
+        `https://microservicevendas-production.up.railway.app/carrinho/remover`,
         payload,
         { headers: { 'X-User-ID': idCliente.toString() } } // Adicionar header X-User-ID
       );

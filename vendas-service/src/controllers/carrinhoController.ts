@@ -112,12 +112,19 @@ export const listarProdutosDoCarrinho = async (req: Request, res: Response, next
 export const adicionarProdutoAoCarrinho = async (req: Request, res: Response, next: NextFunction): Promise<void> => {
   let connection: PoolConnection | null = null;
   try {
-    const idUsuarioLogado = req.headers['x-user-id'] as string | undefined;
-    const { idProduto, quantidade } = req.body as { idProduto: number, quantidade: number };
+    // Tentar obter o ID do cliente do corpo da requisição primeiro
+    const { idProduto, quantidade, idCliente: idClienteBody } = req.body as { idProduto: number, quantidade: number, idCliente?: number };
+    const idUsuarioLogadoHeader = req.headers['x-user-id'] as string | undefined;
 
-    if (!idUsuarioLogado) {
-      res.status(403).json({ success: false, message: 'ID do usuário não fornecido no cabeçalho X-User-ID.' });
-      return;
+    // Usar o ID do corpo se presente, caso contrário, usar o do cabeçalho
+    let idCliente: number;
+    if (idClienteBody !== undefined && typeof idClienteBody === 'number') {
+        idCliente = idClienteBody;
+    } else if (idUsuarioLogadoHeader) {
+        idCliente = parseInt(idUsuarioLogadoHeader);
+    } else {
+        res.status(403).json({ success: false, message: 'ID do cliente não fornecido no corpo ou cabeçalho X-User-ID.' });
+        return;
     }
 
     if (idProduto === undefined || quantidade === undefined) {
@@ -125,8 +132,7 @@ export const adicionarProdutoAoCarrinho = async (req: Request, res: Response, ne
       return;
     }
 
-    const idCliente = parseInt(idUsuarioLogado);
-
+    // Validação de quantidade (mantida)
     if (typeof quantidade !== 'number' || quantidade <= 0) {
       res.status(400).json({ success: false, message: 'Quantidade deve ser um número positivo.' });
       return;

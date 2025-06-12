@@ -4,12 +4,11 @@ import type { ItemCarrinhoDetalhado, CarrinhoDetalhado } from '../../types/index
 
 interface GridProdutosCarrinhoProps {
   itens: ItemCarrinhoDetalhado[];
-  idCliente: number;
   onCarrinhoAtualizado: (carrinho: CarrinhoDetalhado | null) => void;
 }
 
 
-const GridProdutosCarrinho: React.FC<GridProdutosCarrinhoProps> = ({ itens, idCliente, onCarrinhoAtualizado }) => {
+const GridProdutosCarrinho: React.FC<GridProdutosCarrinhoProps> = ({ itens, onCarrinhoAtualizado }) => {
   if (!itens || itens.length === 0) {
     return <p>Seu carrinho está vazio.</p>;
   }
@@ -20,7 +19,6 @@ const GridProdutosCarrinho: React.FC<GridProdutosCarrinhoProps> = ({ itens, idCl
         <CardProdutoCarrinho
           key={item.idProduto} // idProduto deve ser único no carrinho
           item={item}
-          idCliente={idCliente} // Correção: Usar a prop idCliente recebida
           onCarrinhoAtualizado={onCarrinhoAtualizado}
         />
       ))}

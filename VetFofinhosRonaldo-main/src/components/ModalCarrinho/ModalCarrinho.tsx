@@ -7,23 +7,36 @@ import styles from './ModalCarrinho.module.css'; // Importar o CSS Module
 interface ModalCarrinhoProps {
   isVisible: boolean;
   onClose: () => void;
-  idCliente: number;
   carrinhoPai: CarrinhoDetalhado | null; // Nova prop para receber o carrinho do pai
   onCarrinhoChange: (carrinho: CarrinhoDetalhado | null) => void; // Notifica o pai sobre mudanças
 }
 
-const ModalCarrinho: React.FC<ModalCarrinhoProps> = ({ isVisible, onClose, idCliente, carrinhoPai, onCarrinhoChange }) => {
+// Função auxiliar para obter o ID do usuário do localStorage (local para este componente)
+const getUserId = (): number | null => {
+  const userStr = localStorage.getItem('user');
+  if (!userStr) {
+    return null;
+  }
+  try {
+    const user = JSON.parse(userStr);
+    return user.id || null;
+  } catch (e) {
+    console.error('Erro ao obter ID do usuário no ModalCarrinho:', e);
+    return null;
+  }
+};
+
+const ModalCarrinho: React.FC<ModalCarrinhoProps> = ({ isVisible, onClose, carrinhoPai, onCarrinhoChange }) => {
   // O estado local 'carrinho' agora reflete o 'carrinhoPai' ou o resultado de uma busca inicial
   const [carrinho, setCarrinho] = useState<CarrinhoDetalhado | null>(carrinhoPai);
   const [loading, setLoading] = useState<boolean>(!carrinhoPai); // Inicia loading se não houver carrinhoPai
   const [error, setError] = useState<string | null>(null);
   
   const fetchCarrinho = useCallback(async () => {
-    const user = JSON.parse(localStorage.getItem('user') || '{}');
-    const idCliente = user.id;
+    const idClienteFromStorage = getUserId(); // Obter ID do localStorage
     
-    if (!idCliente) {
-      setError("ID do cliente não fornecido.");
+    if (!idClienteFromStorage) {
+      setError("ID do cliente não fornecido no localStorage.");
       setLoading(false);
       return;
     }
@@ -32,12 +45,12 @@ const ModalCarrinho: React.FC<ModalCarrinhoProps> = ({ isVisible, onClose, idCli
     setError(null);
     try {
       const response = await axios.get<ApiResponse<CarrinhoDetalhado>>(
-        `https://microservicevendas-production.up.railway.app/carrinho/${idCliente}`,
+        `https://microservicevendas-production.up.railway.app/carrinho/${idClienteFromStorage}`,
         {
           headers: {
             'Content-Type': 'application/json',
             'Accept': 'application/json',
-            'X-User-ID': idCliente.toString()
+            'X-User-ID': idClienteFromStorage.toString()
           },
           withCredentials: true
         }
@@ -78,7 +91,7 @@ const ModalCarrinho: React.FC<ModalCarrinhoProps> = ({ isVisible, onClose, idCli
     } finally {
       setLoading(false);
     }
-  }, [idCliente, onCarrinhoChange]);
+  }, [onCarrinhoChange]);
 
   useEffect(() => {
     // Atualiza o estado interno do modal se a prop carrinhoPai mudar
@@ -93,11 +106,12 @@ const ModalCarrinho: React.FC<ModalCarrinhoProps> = ({ isVisible, onClose, idCli
       // 1. Se não há carrinhoPai (primeira abertura, talvez) OU
       // 2. Se o carrinhoPai existe, mas seu idUsuario não bate com o idCliente atual (mudança de usuário, improvável neste fluxo mas bom para robustez)
       // então, busca o carrinho.
-      if (!carrinhoPai || (carrinhoPai && carrinhoPai.idUsuario !== idCliente)) {
+      const currentUserId = getUserId();
+      if (!carrinhoPai || (carrinhoPai && carrinhoPai.idUsuario !== currentUserId)) {
         fetchCarrinho();
       }
     }
-  }, [isVisible, carrinhoPai, idCliente, fetchCarrinho]);
+  }, [isVisible, carrinhoPai, fetchCarrinho]);
 
   const handleCarrinhoAtualizadoInternamente = (carrinhoAtualizado: CarrinhoDetalhado | null) => {
     if (carrinhoAtualizado) {
@@ -136,7 +150,6 @@ const ModalCarrinho: React.FC<ModalCarrinhoProps> = ({ isVisible, onClose, idCli
           {carrinho.itens.length > 0 ? (
             <GridProdutosCarrinho
               itens={carrinho.itens}
-              idCliente={idCliente} // Passa o ID do cliente real para o componente filho
               onCarrinhoAtualizado={handleCarrinhoAtualizadoInternamente}
             />
           ) : (

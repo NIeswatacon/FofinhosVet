@@ -10,11 +10,25 @@ import { API_URLS } from '../../services/api';
 
 interface CardProdutoProps {
     produto: ProdutoBase;
-    idCliente: number;
     onProdutoAdicionado: (carrinho: CarrinhoDetalhado) => void;
 }
 
-const CardProduto: React.FC<CardProdutoProps> = ({ produto, idCliente, onProdutoAdicionado }) => {
+// Função auxiliar para obter o ID do usuário do localStorage (local para este componente)
+const getUserId = (): number | null => {
+  const userStr = localStorage.getItem('user');
+  if (!userStr) {
+    return null;
+  }
+  try {
+    const user = JSON.parse(userStr);
+    return user.id || null;
+  } catch (e) {
+    console.error('Erro ao obter ID do usuário no CardProduto:', e);
+    return null;
+  }
+};
+
+const CardProduto: React.FC<CardProdutoProps> = ({ produto, onProdutoAdicionado }) => {
     const [isAdding, setIsAdding] = React.useState(false); // Estado para rastrear se a adição está em progresso
 
     const getImagemGenerica = (tipo: ProdutoBase['tipo']): string => {
@@ -25,26 +39,33 @@ const CardProduto: React.FC<CardProdutoProps> = ({ produto, idCliente, onProduto
         return `${basePath}produto_default.png`; // Uma imagem padrão caso o tipo não seja reconhecido
     };
 
-
-
     const handleAdicionarAoCarrinho = async () => {
         if (isAdding) return; // Previne múltiplas submissões
 
         setIsAdding(true);
+
+        const idUsuario = getUserId(); // Obtendo o ID do localStorage
+
+        if (!idUsuario) {
+            console.error("ID do usuário não encontrado no localStorage para adicionar ao carrinho.");
+            setIsAdding(false);
+            return; // Retorna sem fazer a chamada se o ID não for encontrado
+        }
+
         const payload: AdicionarAoCarrinhoPayload = {
-           idCliente: idCliente,
+            idCliente: idUsuario, // Alterado o nome do campo para idCliente
             idProduto: produto.id,
             quantidade: 1,
         };
 
-        console.log('[CardProduto] Tentando adicionar ao carrinho, payload:', payload);
+        console.log('[CardProduto] Tentando adicionar ao carrinho, payload:', payload, 'X-User-ID:', idUsuario);
 
         try {
             // Corrigido o endpoint para corresponder à API de adicionar produto ao carrinho
            const response = await axios.post<ApiResponse<CarrinhoDetalhado>>(
-                `${API_URLS.vendas}/api/vendas/carrinho/adicionar`, 
+                `${API_URLS.vendas}/carrinho/adicionar`, // Ajuste o endpoint se necessário, API_URLS.vendas já deve incluir a base
                 payload,
-                { headers: { 'x-user-id': idCliente.toString() } }
+                { headers: { 'X-User-ID': idUsuario.toString() } } // Usar o ID do localStorage no header (mantido por precaução)
             );
             const result = response.data;
             if (result.success && result.data) {
