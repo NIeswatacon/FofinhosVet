@@ -62,20 +62,44 @@ export const AgendamentosPage = () => {
   const [isSubmitting, setIsSubmitting] = useState(false); // Estado para o loading do submit
   const [error, setError] = useState<string | null>(null);
   const [successMessage, setSuccessMessage] = useState<string | null>(null);
+    // Função para obter o ID do usuário do localStorage
+  const getUserId = (): number | null => {
+    const userStr = localStorage.getItem('user');
+    if (!userStr) {
+      return null;
+    }
+    try {
+      const user = JSON.parse(userStr);
+      return user.id || null;
+    } catch (e) {
+      console.error('Erro ao obter ID do usuário:', e);
+      return null;
+    }
+  };
 
   useEffect(() => {
-    // Simula a obtenção do ID do cliente do localStorage ou de um contexto de autenticação
-    // No seu aplicativo real, isso viria do seu sistema de autenticação
-    const storedClienteId = localStorage.getItem('loggedInClienteId');
-    if (storedClienteId) {
-      const parsedId = parseInt(storedClienteId, 10);
-      if (!isNaN(parsedId)) {
-        setClienteIdFromAuth(parsedId);
-      } else {
-        setError("ID de cliente armazenado é inválido.");
-      }
+    const userId = getUserId();
+    if (userId !== null) {
+      setClienteIdFromAuth(userId);
+      // Limpar qualquer erro anterior se o usuário for encontrado
+      setError(null);
+    } else {
+      setError("Nenhum cliente logado. Por favor, faça o login para acessar esta página.");
+      // Garante que estados dependentes sejam limpos se não houver usuário
+       setClienteIdFromAuth(null);
+       setLoggedInCliente(null);
+       setAgendamentos([]);
+       setFormData({
+        nomeCliente: '',
+        petNome: '',
+        servico: ServicoEnumFrontend.BANHO,
+        data: '',
+        dataHoraInput: '',
+        nomeFuncionario: '',
+      });
+       setPets([]);
     }
-  }, []); // Executa apenas uma vez na montagem para buscar o ID
+    }, []); // Executa apenas uma vez na montagem
 
   const fetchAgendamentos = async () => {
   // A verificação do loggedInCliente já garante que teremos o ID.
@@ -107,6 +131,7 @@ export const AgendamentosPage = () => {
       setLoggedInCliente(response.data);
       // Pré-preenche nomeCliente no formData
       setFormData(prev => ({ ...prev, nomeCliente: response.data.nome }));
+      setError(null); // Limpa erros anteriores se a busca for bem-sucedida
     } catch (err) {
       setError(`Falha ao buscar dados do cliente ID: ${id}. Verifique se o cliente existe e o microserviço de Contas está rodando.`);
       console.error(err);
@@ -121,6 +146,7 @@ export const AgendamentosPage = () => {
       setPets([]);
       setSelectedPetIdForDropdown('');
       setFormData(prev => ({ ...prev, petNome: '' }));
+      return;
     }
     try {
       const response = await axios.get<Pet[]>(`${API_CONTAS_BASE_URL}/clientes/${clienteId}/pets`);
@@ -141,10 +167,9 @@ export const AgendamentosPage = () => {
   useEffect(() => {
     if (clienteIdFromAuth) {
       fetchLoggedInClienteData(clienteIdFromAuth);
-    } else if (!localStorage.getItem('loggedInClienteId')) { // Se não houver ID no localStorage após a tentativa inicial
-        setError("Nenhum cliente logado. Por favor, faça o login para acessar esta página.");
-        setLoggedInCliente(null); // Garante que não há dados de cliente se não houver ID
-    }
+    } // Não é necessário um 'else' aqui.
+    // Se clienteIdFromAuth for null, o primeiro useEffect já definiu o erro
+    // e limpou os estados relevantes (loggedInCliente, pets, formData, agendamentos).
   }, [clienteIdFromAuth]); // Dependência no ID do cliente obtido da "autenticação"
 
    useEffect(() => {
@@ -152,9 +177,15 @@ export const AgendamentosPage = () => {
       fetchPetsDoCliente(loggedInCliente.id);
       fetchAgendamentos(); // fetchAgendamentos usará loggedInCliente.nome para filtrar
     } else {
+      // Se loggedInCliente for null (seja por falha no fetch ou por não haver clienteIdFromAuth),
+      // limpa os dados dependentes.
       setPets([]);
       setSelectedPetIdForDropdown('');
-      setFormData(prev => ({ ...prev, petNome: '' }));
+            setFormData(prev => ({
+        ...prev,
+        nomeCliente: '', // Limpar nome do cliente no formulário
+        petNome: ''      // Limpar nome do pet no formulário
+      }));
       setAgendamentos([]);
     }
   }, [loggedInCliente]); // Depende do cliente logado
@@ -221,33 +252,53 @@ export const AgendamentosPage = () => {
       setIsSubmitting(false);
     }
   };
-  if (!loggedInCliente && isLoading) {
-    return <div className={styles.container}><p>Carregando dados do cliente...</p></div>;
-  }
-
-  if (!loggedInCliente && !isLoading && error && clienteIdFromAuth) { // Mostra erro de busca se tentou buscar com um ID
-    return <div className={styles.container}><p className={styles.errorMessage}>{error}</p></div>;
-  }
-
-  if (!clienteIdFromAuth && !isLoading) { // Se não há ID e não está carregando
-    // Mensagem para o usuário fazer login ou erro se o ID não foi encontrado
+  // 1. Estado inicial de carregamento/verificação ou usuário não logado (erro do getUserId)
+  if (!clienteIdFromAuth) {
+    const message = error || "Verificando autenticação...";
     return (
-    <div className={styles.container}>
-      <p className={styles.errorMessage}>
-        {error || "Por favor, faça login para ver seus agendamentos."}
-        </p>
+      <div>
+        <NavBar />
+        <div className={styles.container}>
+          <p className={error ? styles.errorMessage : styles.loadingMessage}>{message}</p>
+        </div>
+        <footer className={styles.footer}>
+          <p>&copy; {new Date().getFullYear()} VetFofinhosRonaldo. Todos os direitos reservados.</p>
+        </footer>
+      </div>
+    );
+  }
+  // A partir daqui, clienteIdFromAuth EXISTE.
+
+  // 2. Carregando dados do cliente ou erro ao carregar dados do cliente
+  if (!loggedInCliente) {
+    let messageContent;
+    if (isLoading) {
+      messageContent = <p>Carregando dados do cliente...</p>;
+    } else if (error) {
+      messageContent = <p className={styles.errorMessage}>{error}</p>;
+    } else {
+      // Fallback: clienteIdFromAuth existe, não está carregando, não há erro, mas loggedInCliente é null.
+      messageContent = <p className={styles.errorMessage}>Não foi possível carregar os dados do cliente. Por favor, tente recarregar a página.</p>;
+    }
+    return (
+      <div>
+        <NavBar />
+        <div className={styles.container}>
+          {messageContent}
+        </div>
+        <footer className={styles.footer}>
+          <p>&copy; {new Date().getFullYear()} VetFofinhosRonaldo. Todos os direitos reservados.</p>
+        </footer>
       </div>
     );
   }
 
+  // 3. Dados do cliente carregados (loggedInCliente existe) -> Renderiza a página principal
 
 return (
   <div>
     <NavBar />
     <div className={styles.container}>
-      {/* Renderiza o header e o main apenas se loggedInCliente não for null */}
-      {loggedInCliente ? (
-        // O React Fragment <> deve envolver todo o conteúdo condicional
         <>
           <header className={styles.header}>
             <h1>Agendamentos</h1>
@@ -319,11 +370,7 @@ return (
             </section>
           </main>
         </>
-      ) : (
-        // Bloco "else" da condição, executado se loggedInCliente for nulo
-        <p>Carregando dados do cliente...</p>
-      )}
-
+        {/* O conteúdo principal é renderizado aqui porque loggedInCliente já foi verificado */}
       <footer className={styles.footer}>
         <p>&copy; {new Date().getFullYear()} VetFofinhosRonaldo. Todos os direitos reservados.</p>
       </footer>

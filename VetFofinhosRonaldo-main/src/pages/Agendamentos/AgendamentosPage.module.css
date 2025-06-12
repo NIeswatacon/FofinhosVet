@@ -1,71 +1,171 @@
+/* AgendamentosPage.module.css */
+
 .container {
+  max-width: 960px;
+  margin: 0 auto;
+  padding: 20px;
+  font-family: 'Arial', sans-serif; /* Padrão, ajuste para a fonte do seu projeto */
+  color: #333; /* Cor de texto padrão, ajuste */
+  min-height: calc(100vh - 120px); /* Ajustar conforme altura do NavBar e Footer */
   display: flex;
   flex-direction: column;
-  align-items: center;
-  padding: 20px;
-  font-family: 'Inter', sans-serif;
-  min-height: 100vh;
-  background-color: #f4f7f6; /* Um cinza claro para o fundo */
 }
 
 .header {
   text-align: center;
   margin-bottom: 30px;
-  color: #333;
+  padding-bottom: 20px;
+  border-bottom: 1px solid #eee; /* Cor de borda sutil, ajuste */
 }
 
 .header h1 {
-  font-size: 2.5rem;
-  color: #2c5282; /* Um azul mais escuro para o título principal */
-  margin-bottom: 0.5rem;
+  color: #4a4a4a; /* Cor de título, ajuste */
+  margin-bottom: 8px;
+  font-size: 2rem; /* Tamanho do título principal */
 }
 
 .header p {
-  font-size: 1.1rem;
-  color: #555;
+  font-size: 1rem;
+  color: #555; /* Cor de subtítulo/descrição, ajuste */
 }
 
 .mainContent {
-  width: 100%;
-  max-width: 800px; /* Limita a largura do conteúdo principal */
-  background-color: #fff;
-  padding: 20px;
-  border-radius: 8px;
-  box-shadow: 0 4px 8px rgba(0, 0, 0, 0.1);
+  display: flex;
+  flex-direction: column;
+  gap: 40px; /* Espaçamento entre seções */
 }
 
 .section {
-  margin-bottom: 30px;
+  background-color: #f9f9f9; /* Fundo de seção, ajuste */
+  padding: 25px;
+  border-radius: 8px; /* Bordas arredondadas, ajuste */
+  box-shadow: 0 2px 10px rgba(0, 0, 0, 0.05); /* Sombra sutil, ajuste */
 }
 
 .section h2 {
-  font-size: 1.8rem;
-  color: #333;
-  border-bottom: 2px solid #2c5282;
-  padding-bottom: 10px;
+  margin-top: 0;
   margin-bottom: 20px;
+  color: #007bff; /* Cor de destaque para títulos de seção, ajuste */
+  border-bottom: 2px solid #007bff; /* Linha abaixo do título da seção, ajuste */
+  padding-bottom: 10px;
+  font-size: 1.5rem;
+}
+
+.form {
+  display: flex;
+  flex-direction: column;
+  gap: 20px; /* Espaçamento entre grupos de formulário */
+}
+
+.formGroup {
+  display: flex;
+  flex-direction: column;
+}
+
+.formGroup label {
+  margin-bottom: 8px;
+  font-weight: bold;
+  color: #555; /* Cor do label, ajuste */
+}
+
+.formGroup input,
+.formGroup select,
+.formGroup textarea {
+  padding: 12px;
+  border: 1px solid #ccc; /* Cor da borda do input, ajuste */
+  border-radius: 6px; /* Arredondamento do input, ajuste */
+  font-size: 1rem;
+  box-sizing: border-box;
+  transition: border-color 0.2s ease-in-out;
+}
+
+.formGroup input:focus,
+.formGroup select:focus,
+.formGroup textarea:focus {
+  border-color: #007bff; /* Cor da borda do input em foco, ajuste */
+  outline: none;
+  box-shadow: 0 0 0 0.2rem rgba(0, 123, 255, 0.25); /* Sombra do input em foco, ajuste */
+}
+
+.submitButton {
+  padding: 12px 20px;
+  background-color: #007bff; /* Cor de fundo do botão, ajuste */
+  color: white;
+  border: none;
+  border-radius: 6px; /* Arredondamento do botão, ajuste */
+  cursor: pointer;
+  font-size: 1rem;
+  font-weight: bold;
+  transition: background-color 0.2s ease-in-out;
+  align-self: flex-start; /* Para alinhar o botão à esquerda se necessário */
+}
+
+.submitButton:hover:not(:disabled) {
+  background-color: #0056b3; /* Cor do botão ao passar o mouse, ajuste */
+}
+
+.submitButton:disabled {
+  background-color: #ccc; /* Cor do botão desabilitado, ajuste */
+  cursor: not-allowed;
+}
+
+.errorMessage,
+.successMessage,
+.loadingMessage { /* Adicionada .loadingMessage que estava no TSX */
+  padding: 12px;
+  margin-top: 15px;
+  border-radius: 6px;
+  text-align: center;
+  border: 1px solid transparent; /* Borda base */
+}
+
+.errorMessage {
+  background-color: #f8d7da; /* Fundo para erro, ajuste */
+  color: #721c24; /* Texto para erro, ajuste */
+  border-color: #f5c6cb; /* Borda para erro, ajuste */
+}
+
+.successMessage {
+  background-color: #d4edda; /* Fundo para sucesso, ajuste */
+  color: #155724; /* Texto para sucesso, ajuste */
+  border-color: #c3e6cb; /* Borda para sucesso, ajuste */
+}
+
+.loadingMessage {
+  color: #004085; /* Texto para carregamento, ajuste */
+  background-color: #cce5ff; /* Fundo para carregamento, ajuste */
+  border-color: #b8daff; /* Borda para carregamento, ajuste */
+  font-style: italic;
 }
 
 .appointmentList {
-  list-style: none;
+  list-style-type: none;
   padding: 0;
+  margin-top: 20px;
 }
 
 .appointmentItem {
-  background-color: #e9f2f9; /* Um azul bem claro para os itens */
+  background-color: #fff; /* Fundo do item da lista, ajuste */
+  border: 1px solid #ddd; /* Borda do item da lista, ajuste */
   padding: 15px;
-  border-radius: 6px;
   margin-bottom: 10px;
-  border-left: 5px solid #2c5282; /* Destaque na lateral */
+  border-radius: 6px; /* Arredondamento do item da lista, ajuste */
+  box-shadow: 0 1px 3px rgba(0,0,0,0.03); /* Sombra sutil do item, ajuste */
 }
 
-.appointmentItem strong {
-  color: #2c5282;
+.appointmentItem div {
+  margin-bottom: 5px;
+}
+
+.appointmentItem div strong {
+  color: #333; /* Cor do texto em negrito dentro do item, ajuste */
 }
 
 .footer {
-  margin-top: 40px;
   text-align: center;
+  padding: 20px 0;
+  margin-top: auto; /* Empurra o footer para baixo */
+  border-top: 1px solid #eee; /* Cor da borda sutil, ajuste */
   font-size: 0.9rem;
-  color: #777;
+  color: #777; /* Cor do texto do footer, ajuste */
 }
