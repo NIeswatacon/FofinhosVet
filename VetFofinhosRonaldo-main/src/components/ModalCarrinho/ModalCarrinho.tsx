@@ -1,4 +1,5 @@
 import React, { useState, useEffect, useCallback } from 'react';
+import { useNavigate } from 'react-router-dom';
 import GridProdutosCarrinho from '../GridProdutoCarrinho/GridProdutoCarrinho';
 import axios from 'axios';
 import type { CarrinhoDetalhado, ApiResponse } from '../../types/index';
@@ -28,6 +29,7 @@ const getUserId = (): number | null => {
 };
 
 const ModalCarrinho: React.FC<ModalCarrinhoProps> = ({ isVisible, onClose, carrinhoPai, onCarrinhoChange }) => {
+  const navigate = useNavigate();
   // O estado local 'carrinho' agora reflete o 'carrinhoPai' ou o resultado de uma busca inicial
   const [carrinho, setCarrinho] = useState<CarrinhoDetalhado | null>(carrinhoPai);
   const [loading, setLoading] = useState<boolean>(false);
@@ -139,6 +141,15 @@ const ModalCarrinho: React.FC<ModalCarrinhoProps> = ({ isVisible, onClose, carri
     }
   };
 
+  const handleFinalizarCompra = () => {
+    if (carrinho && carrinho.itens.length > 0) {
+      // Fecha o modal do carrinho
+      onClose();
+      // Navega para a página de pagamento
+      navigate('/pagamento');
+    }
+  };
+
   if (!isVisible) {
     return null;
   }
@@ -166,7 +177,10 @@ const ModalCarrinho: React.FC<ModalCarrinhoProps> = ({ isVisible, onClose, carri
           {carrinho.itens.length > 0 && (
             <div className={styles.footer}>
               <h3>Total: R$ {carrinho.total.toFixed(2)}</h3>
-              <button className={styles.checkoutButton}>
+              <button 
+                className={styles.checkoutButton}
+                onClick={handleFinalizarCompra}
+              >
                 Finalizar Compra
               </button>
             </div>

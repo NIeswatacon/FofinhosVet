@@ -9,6 +9,7 @@ import type { ItemCarrinhoDetalhado, AdicionarAoCarrinhoPayload, RemoverDoCarrin
 interface CardProdutoCarrinhoProps {
   item: ItemCarrinhoDetalhado;
   onCarrinhoAtualizado: (carrinho: CarrinhoDetalhado | null) => void;
+  idCarrinho: number; // Adicionando o ID do carrinho como prop
 }
 
 // Função auxiliar para obter o ID do usuário do localStorage
@@ -26,7 +27,7 @@ const getUserId = (): number | null => {
   }
 };
 
-const CardProdutoCarrinho: React.FC<CardProdutoCarrinhoProps> = ({ item, onCarrinhoAtualizado }) => {
+const CardProdutoCarrinho: React.FC<CardProdutoCarrinhoProps> = ({ item, onCarrinhoAtualizado, idCarrinho }) => {
   const [isUpdating, setIsUpdating] = useState(false); // Estado para desabilitar botões durante chamadas API
 
   const handleAlterarQuantidade = async (incremento: number) => {
@@ -34,6 +35,12 @@ const CardProdutoCarrinho: React.FC<CardProdutoCarrinhoProps> = ({ item, onCarri
     setIsUpdating(true);
 
     const novaQuantidade = item.quantidade + incremento;
+
+    // Se a quantidade atual for 1 e o usuário clicar em -, remove o item
+    if (item.quantidade === 1 && incremento < 0) {
+      await handleRemoverItemCompletamenteInternal();
+      return;
+    }
 
     if (novaQuantidade <= 0) {
       await handleRemoverItemCompletamenteInternal();
@@ -94,34 +101,31 @@ const CardProdutoCarrinho: React.FC<CardProdutoCarrinhoProps> = ({ item, onCarri
     }
   };
 
-  // Renomeado para gerenciar o estado isUpdating internamente
   const handleRemoverItemCompletamenteInternal = async () => {
-    // Verifica se já está atualizando por handleAlterarQuantidade que resultou em remoção
-    // Se isUpdating já for true e a chamada veio de handleAlterarQuantidade, não precisa setar de novo.
-    // Mas se for um clique direto no botão remover, precisamos setar.
-    if (isUpdating && (item.quantidade + (-1) > 0)) return; // Evita setar se já está em progresso por outra ação
+    if (isUpdating && (item.quantidade + (-1) > 0)) return;
     setIsUpdating(true);
 
-    const idCliente = getUserId(); // Obtendo o ID do localStorage
+    const idCliente = getUserId();
 
     if (!idCliente) {
       console.error("ID do cliente não fornecido no localStorage para remover item.");
       setIsUpdating(false);
-      return; // Retorna sem fazer a chamada se o ID não for encontrado
+      return;
     }
 
-    // Para remover completamente, não enviamos 'quantidade' no payload,
-    // ou a API deve interpretar 'quantidade' ausente como remoção total.
-    const payload = { idProduto: item.idProduto };
-    console.log('[CardProdutoCarrinho] Tentando remover item completamente. Payload:', payload);
     try {
-      const response = await axios.post<ApiResponse<CarrinhoDetalhado>>(
-        `https://microservicevendas-production.up.railway.app/carrinho/remover`,
-        payload,
-        { headers: { 'X-User-ID': idCliente.toString() } } // Adicionar header X-User-ID
+      const response = await axios.delete<ApiResponse<CarrinhoDetalhado>>(
+        `https://microservicevendas-production.up.railway.app/carrinho/${idCarrinho}/remover/${item.idProduto}`,
+        {
+          data: { idCliente },
+          headers: {
+            'Content-Type': 'application/json'
+          }
+        }
       );
+
       const result = response.data;
-      if (result.success) { // A API pode retornar data: null se o carrinho for removido
+      if (result.success) {
         console.log('[CardProdutoCarrinho] Item removido com sucesso:', result.data);
         onCarrinhoAtualizado(result.data || null);
       } else {

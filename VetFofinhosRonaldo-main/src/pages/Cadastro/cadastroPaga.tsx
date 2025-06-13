@@ -124,8 +124,13 @@ const CadastroPaga: React.FC = () => {
       
       const url = `${API_URLS.conta}/api/contas`;
 
-      console.log('Enviando dados para a API:', dadosCadastro);
-      console.log('URL da API (normalizada):', url);
+      console.log('=== DETALHES DA REQUISIÇÃO DE CADASTRO ===');
+      console.log('URL da requisição:', url);
+      console.log('Body da requisição:', JSON.stringify(dadosCadastro, null, 2));
+      console.log('Headers da requisição:', {
+        'Content-Type': 'application/json'
+      });
+      console.log('=========================================');
       
       const response = await axios.post(url, dadosCadastro);
       
