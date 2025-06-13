@@ -145,12 +145,13 @@
 }
 
 .appointmentItem {
-  background-color: #fff; /* Fundo do item da lista, ajuste */
-  border: 1px solid #ddd; /* Borda do item da lista, ajuste */
+  background-color: #fff;
+  border: 1px solid #ddd;
   padding: 15px;
   margin-bottom: 10px;
-  border-radius: 6px; /* Arredondamento do item da lista, ajuste */
-  box-shadow: 0 1px 3px rgba(0,0,0,0.03); /* Sombra sutil do item, ajuste */
+  border-radius: 6px;
+  box-shadow: 0 1px 3px rgba(0,0,0,0.03);
+  position: relative;
 }
 
 .appointmentItem div {
@@ -159,6 +160,42 @@
 
 .appointmentItem div strong {
   color: #333; /* Cor do texto em negrito dentro do item, ajuste */
+}
+
+.statusBadge {
+  margin-top: 10px;
+  padding: 5px 10px;
+  border-radius: 4px;
+  font-weight: bold;
+  display: inline-block;
+}
+
+/* Estilos para cada status */
+.statuspendente {
+  border-left: 4px solid #ffc107;
+}
+
+.statuspendente .statusBadge {
+  background-color: #fff3cd;
+  color: #856404;
+}
+
+.statuspago {
+  border-left: 4px solid #28a745;
+}
+
+.statuspago .statusBadge {
+  background-color: #d4edda;
+  color: #155724;
+}
+
+.statuscancelado {
+  border-left: 4px solid #dc3545;
+}
+
+.statuscancelado .statusBadge {
+  background-color: #f8d7da;
+  color: #721c24;
 }
 
 .footer {

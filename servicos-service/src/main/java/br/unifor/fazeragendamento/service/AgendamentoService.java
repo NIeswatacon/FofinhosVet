@@ -38,7 +38,8 @@ public class AgendamentoService {
             throw new RuntimeException("Falha ao validar o cliente com ID: " + userId);
         }
         if (pet == null) {
-            throw new RuntimeException("Falha ao validar o pet com ID: " + dto.getIdPet() + " para o cliente " + userId);
+            throw new RuntimeException(
+                    "Falha ao validar o pet com ID: " + dto.getIdPet() + " para o cliente " + userId);
         }
 
         Agendamento agendamento = new Agendamento();
@@ -60,10 +61,10 @@ public class AgendamentoService {
                 .uri("/contas/{id}", clienteId)
                 .retrieve()
                 .bodyToMono(ClienteDTO.class)
-                .onErrorMap(WebClientResponseException.NotFound.class, 
-                    e -> new RuntimeException("Cliente não encontrado com ID: " + clienteId, e))
-                .onErrorMap(e -> !(e instanceof RuntimeException), 
-                    e -> new RuntimeException("Erro ao comunicar com conta-service para validar cliente.", e));
+                .onErrorMap(WebClientResponseException.NotFound.class,
+                        e -> new RuntimeException("Cliente não encontrado com ID: " + clienteId, e))
+                .onErrorMap(e -> !(e instanceof RuntimeException),
+                        e -> new RuntimeException("Erro ao comunicar com conta-service para validar cliente.", e));
     }
 
     private Mono<PetDTO> validarPetDoCliente(Long clienteId, Long petId) {
@@ -98,5 +99,11 @@ public class AgendamentoService {
 
     public List<Agendamento> listarAgendamentosPorCliente(Long clienteId) {
         return agendamentoRepository.findByClienteId(clienteId);
+    }
+
+    public Agendamento atualizarStatus(Long id, Agendamento.StatusPagamento novoStatus) {
+        Agendamento agendamento = pegarDetalhes(id);
+        agendamento.setStatusPagamento(novoStatus);
+        return agendamentoRepository.save(agendamento);
     }
 }

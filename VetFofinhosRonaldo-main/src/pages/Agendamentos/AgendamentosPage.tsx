@@ -22,6 +22,7 @@ export interface Agendamento {
   nomePet: string;
   nomeCliente: string;
   valorServico?: number;
+  statusPagamento?: string;
 }
 
 export interface Cliente {
@@ -246,7 +247,7 @@ export const AgendamentosPage = () => {
       });
 
       setSuccessMessage('Agendamento criado com sucesso!');
-      
+
       // Limpa o formulário após o sucesso, mas mantém o nome do cliente
       setFormData({
         nomeCliente: loggedInCliente?.nome || '',
@@ -380,12 +381,15 @@ export const AgendamentosPage = () => {
               {!isLoading && !error && agendamentos.length > 0 && (
                 <ul className={styles.appointmentList}>
                   {agendamentos.map(ag => (
-                    <li key={ag.id} className={styles.appointmentItem}>
+                    <li key={ag.id} className={`${styles.appointmentItem} ${styles[`status${ag.statusPagamento?.toLowerCase() || 'pendente'}`]}`}>
                       <div><strong>Pet:</strong> {ag.nomePet}</div>
                       <div><strong>Serviço:</strong> {ag.servico}</div>
                       <div><strong>Data:</strong> {new Date(ag.data + 'T00:00:00').toLocaleDateString('pt-BR')}</div>
                       {ag.nomeFuncionario && <div><strong>Funcionário:</strong> {ag.nomeFuncionario}</div>}
                       {ag.valorServico && <div><strong>Valor:</strong> R$ {ag.valorServico.toFixed(2)}</div>}
+                      <div className={styles.statusBadge}>
+                        <strong>Status:</strong> {ag.statusPagamento || 'PENDENTE'}
+                      </div>
                     </li>
                   ))}
                 </ul>

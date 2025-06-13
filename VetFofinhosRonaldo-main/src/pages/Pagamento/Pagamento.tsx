@@ -105,7 +105,7 @@ const PagamentoComponent: React.FC = () => {
         console.log('Buscando cartões para o usuário:', user.id);
         const lista = await cartaoService.buscarCartoesPorUsuario(user.id);
         console.log('Cartões encontrados:', lista);
-        
+
         if (Array.isArray(lista)) {
           setCartoesSalvos(lista);
         } else {
@@ -153,9 +153,9 @@ const PagamentoComponent: React.FC = () => {
           }
         );
 
-        // Buscar agendamentos do cliente
+        // Buscar agendamentos pendentes do cliente
         const agendamentosResponse = await axios.get<Agendamento[]>(
-          `${API_URLS.servicos}/agendamentos/cliente/${idCliente}`,
+          `${API_URLS.servicos}/agendamentos/cliente/${idCliente}/pendentes`,
           {
             headers: {
               'Content-Type': 'application/json'
@@ -163,11 +163,15 @@ const PagamentoComponent: React.FC = () => {
           }
         );
 
-        const carrinho = carrinhoResponse.data.data; // Acessar a propriedade data da resposta
+        if (!carrinhoResponse.data.success) {
+          throw new Error('Erro ao buscar carrinho');
+        }
+
+        const carrinho = carrinhoResponse.data.data;
         const agendamentos = agendamentosResponse.data;
 
         // Adicionar log para depuração
-        console.log('Agendamentos recebidos:', agendamentos);
+        console.log('Agendamentos pendentes recebidos:', agendamentos);
 
         // Calcular totais
         const totalProdutos = Number(carrinho.total) || 0;
@@ -385,19 +389,39 @@ const PagamentoComponent: React.FC = () => {
       if (!userStr) throw new Error('Usuário não encontrado');
       const user = JSON.parse(userStr);
       const idCliente = user.id;
-      const idCarrinho = resumoPagamento.produtos[0]?.idCarrinho || 0;
 
-      // 1. Atualizar status dos agendamentos para "PAGO"
-      await Promise.all(resumoPagamento.agendamentos.map(agendamento =>
-        axios.patch(`${API_URLS.servicos}/agendamentos/${agendamento.id}/status`, { statusPagamento: 'PAGO' }, {
+      // Verificar se há produtos no carrinho antes de tentar esvaziar
+      if (resumoPagamento.produtos.length > 0) {
+        // Buscar o carrinho atual do cliente
+        const carrinhoResponse = await axios.get(`${API_URLS.vendas}/carrinho/${idCliente}`);
+        if (!carrinhoResponse.data.success) {
+          throw new Error('Erro ao buscar carrinho');
+        }
+
+        const idCarrinho = carrinhoResponse.data.data.idCarrinho;
+        if (!idCarrinho) {
+          throw new Error('ID do carrinho não encontrado');
+        }
+
+        // 1. Atualizar status dos agendamentos para "PAGO"
+        await Promise.all(resumoPagamento.agendamentos.map(agendamento =>
+          axios.patch(`${API_URLS.servicos}/agendamentos/${agendamento.id}/status`, "PAGO", {
+            headers: { 'Content-Type': 'application/json' }
+          })
+        ));
+
+        // 2. Esvaziar carrinho apenas se houver produtos
+        await axios.delete(`${API_URLS.vendas}/carrinho/${idCliente}/${idCarrinho}/esvaziar`, {
           headers: { 'Content-Type': 'application/json' }
-        })
-      ));
-
-      // 2. Esvaziar carrinho
-      await axios.post(`${API_URLS.vendas}/carrinho/${idCliente}/${idCarrinho}/esvaziar`, {}, {
-        headers: { 'Content-Type': 'application/json' }
-      });
+        });
+      } else {
+        // Se não houver produtos, apenas atualiza os agendamentos
+        await Promise.all(resumoPagamento.agendamentos.map(agendamento =>
+          axios.patch(`${API_URLS.servicos}/agendamentos/${agendamento.id}/status`, "PAGO", {
+            headers: { 'Content-Type': 'application/json' }
+          })
+        ));
+      }
 
       // 3. Mostrar popup de sucesso e atualizar a página
       setShowSuccessPopup(true);
@@ -430,42 +454,47 @@ const PagamentoComponent: React.FC = () => {
       {resumoPagamento && (
         <div className="resumo-pagamento">
           <h3>Resumo do Pagamento</h3>
-          
+
           {/* Produtos do Carrinho */}
-          <div className="secao-produtos">
-            <h4>Produtos no Carrinho</h4>
-            {resumoPagamento.produtos.map(item => (
-              <div key={item.idProduto} className="item-produto">
-                <span>{item.nome}</span>
-                <span>Quantidade: {item.quantidade}</span>
-                <span>R$ {Number((item.preco || 0) * (item.quantidade || 0)).toFixed(2)}</span>
+          {resumoPagamento.produtos.length > 0 && (
+            <div className="secao-produtos">
+              <h4>Produtos no Carrinho</h4>
+              {resumoPagamento.produtos.map(item => (
+                <div key={item.idProduto} className="item-produto">
+                  <span>{item.nome}</span>
+                  <span>Quantidade: {item.quantidade}</span>
+                  <span>R$ {Number((item.preco || 0) * (item.quantidade || 0)).toFixed(2)}</span>
+                </div>
+              ))}
+              <div className="subtotal">
+                <strong>Subtotal Produtos:</strong>
+                <span>R$ {Number(resumoPagamento.totalProdutos || 0).toFixed(2)}</span>
               </div>
-            ))}
-            <div className="subtotal">
-              <strong>Subtotal Produtos:</strong>
-              <span>R$ {Number(resumoPagamento.totalProdutos || 0).toFixed(2)}</span>
             </div>
-          </div>
+          )}
 
-          {/* Agendamentos */}
-          <div className="secao-agendamentos">
-            <h4>Agendamentos</h4>
-            {resumoPagamento.agendamentos.map(agendamento => (
-              <div key={agendamento.id} className="item-agendamento">
-                <span>{agendamento.servico}</span>
-                <span>{agendamento.data ? new Date(agendamento.data + 'T00:00:00').toLocaleDateString('pt-BR') : '-'}</span>
-                <span>R$ {Number(agendamento.valorServico || 0).toFixed(2)}</span>
+          {/* Agendamentos Pendentes */}
+          {resumoPagamento.agendamentos.length > 0 && (
+            <div className="secao-agendamentos">
+              <h4>Agendamentos Pendentes</h4>
+              {resumoPagamento.agendamentos.map(agendamento => (
+                <div key={agendamento.id} className="item-agendamento">
+                  <span>Serviço: {agendamento.servico}</span>
+                  <span>Pet: {agendamento.nomePet}</span>
+                  <span>Data: {new Date(agendamento.data).toLocaleDateString()}</span>
+                  <span>Valor: R$ {Number(agendamento.valorServico || 0).toFixed(2)}</span>
+                </div>
+              ))}
+              <div className="subtotal">
+                <strong>Subtotal Agendamentos:</strong>
+                <span>R$ {Number(resumoPagamento.totalAgendamentos || 0).toFixed(2)}</span>
               </div>
-            ))}
-            <div className="subtotal">
-              <strong>Subtotal Agendamentos:</strong>
-              <span>R$ {Number(resumoPagamento.totalAgendamentos || 0).toFixed(2)}</span>
             </div>
-          </div>
+          )}
 
-          {/* Valor Total */}
-          <div className="valor-total">
-            <h3>Valor Total a Pagar</h3>
+          {/* Total Geral */}
+          <div className="total-geral">
+            <strong>Total a Pagar:</strong>
             <span>R$ {Number(resumoPagamento.valorTotal || 0).toFixed(2)}</span>
           </div>
         </div>
@@ -483,7 +512,7 @@ const PagamentoComponent: React.FC = () => {
           {!loadingCartoes && !erroCartoes && cartoesSalvos.length > 0 && (
             <div className="cartoes-grid">
               {cartoesSalvos.map(cartao => (
-                <div 
+                <div
                   className={`cartao-salvo-item ${selectedCardId === cartao.id ? 'selected' : ''}`}
                   key={cartao.id}
                   onClick={() => handleCardSelect(cartao)}
@@ -500,7 +529,7 @@ const PagamentoComponent: React.FC = () => {
             </div>
           )}
         </div>
-        
+
         {error && (
           <div className="error-message" role="alert"> {/* Adicionar role para acessibilidade */}
             {error}
@@ -536,7 +565,7 @@ const PagamentoComponent: React.FC = () => {
           </div>
         ) : (
           <form onSubmit={handleSubmit} className="payment-form">
-            
+
 
             <div className="payment-methods">
               <h3>Forma de Pagamento</h3>
@@ -566,7 +595,7 @@ const PagamentoComponent: React.FC = () => {
                     type="text"
                     id="numeroCartao"
                     name="numeroCartao"
-                    value={formData.numeroCartao ?? ''} 
+                    value={formData.numeroCartao ?? ''}
                     onChange={handleInputChange}
                     placeholder="0000 0000 0000 0000"
                     maxLength={19} // 16 dígitos + 3 espaços
@@ -617,10 +646,10 @@ const PagamentoComponent: React.FC = () => {
                   />
                 </div>
 
-                
+
               </>
             )}
-            
+
             {formData.formaPagamento === FormaPagamento.PIX && (
               <div className="pix-payment">
                 <p>O QR Code do PIX será gerado após a confirmação do pagamento.</p>

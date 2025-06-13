@@ -6,4 +6,5 @@ export interface Agendamento {
   nomePet: string;
   nomeCliente: string;
   valorServico?: number;
+  statusPagamento?: 'PENDENTE' | 'PAGO' | 'CANCELADO';
 }

@@ -29,7 +29,8 @@ public class AgendamentoController {
     }
 
     @PostMapping
-    public ResponseEntity<?> agendar(@RequestHeader("X-User-ID") String userId, @RequestBody AgendamentoRequestDTO dto) { 
+    public ResponseEntity<?> agendar(@RequestHeader("X-User-ID") String userId,
+            @RequestBody AgendamentoRequestDTO dto) {
         try {
             return new ResponseEntity<>(service.criarAgendamento(Long.parseLong(userId), dto), HttpStatus.CREATED);
         } catch (RuntimeException e) {
@@ -51,11 +52,11 @@ public class AgendamentoController {
     @GetMapping("/cliente/{clienteId}/pendentes")
     public ResponseEntity<List<AgendamentoResponseDTO>> listarPendentes(@PathVariable Long clienteId) {
         List<Agendamento> agendamentos = service.listarAgendamentosPendentesPorCliente(clienteId);
-        
+
         List<AgendamentoResponseDTO> agendamentosDTO = agendamentos.stream()
                 .map(this::toResponseDTO)
                 .collect(Collectors.toList());
-        
+
         return ResponseEntity.ok(agendamentosDTO);
     }
 
@@ -63,5 +64,12 @@ public class AgendamentoController {
     public ResponseEntity<List<Agendamento>> listarPorCliente(@PathVariable Long clienteId) {
         List<Agendamento> agendamentos = service.listarAgendamentosPorCliente(clienteId);
         return ResponseEntity.ok(agendamentos);
+    }
+
+    @PatchMapping("/{id}/status")
+    public ResponseEntity<Agendamento> atualizarStatus(@PathVariable Long id,
+            @RequestBody Agendamento.StatusPagamento novoStatus) {
+        Agendamento agendamento = service.atualizarStatus(id, novoStatus);
+        return ResponseEntity.ok(agendamento);
     }
 }
