@@ -9,7 +9,7 @@ import type { ItemCarrinhoDetalhado, AdicionarAoCarrinhoPayload, RemoverDoCarrin
 interface CardProdutoCarrinhoProps {
   item: ItemCarrinhoDetalhado;
   onCarrinhoAtualizado: (carrinho: CarrinhoDetalhado | null) => void;
-  idCarrinho: number; // Adicionando o ID do carrinho como prop
+  idCarrinho: number; // Adicionando idCarrinho como prop
 }
 
 // Função auxiliar para obter o ID do usuário do localStorage
@@ -113,11 +113,22 @@ const CardProdutoCarrinho: React.FC<CardProdutoCarrinhoProps> = ({ item, onCarri
       return;
     }
 
+    if (!idCarrinho) {
+      console.error("ID do carrinho não fornecido.");
+      setIsUpdating(false);
+      return;
+    }
+
     try {
+      console.log('Removendo item:', {
+        idCliente,
+        idCarrinho,
+        idProduto: item.idProduto
+      });
+
       const response = await axios.delete<ApiResponse<CarrinhoDetalhado>>(
-        `https://microservicevendas-production.up.railway.app/carrinho/${idCarrinho}/remover/${item.idProduto}`,
+        `https://microservicevendas-production.up.railway.app/carrinho/${idCliente}/${idCarrinho}/remover/${item.idProduto}`,
         {
-          data: { idCliente },
           headers: {
             'Content-Type': 'application/json'
           }

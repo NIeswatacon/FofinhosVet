@@ -170,6 +170,7 @@ const ModalCarrinho: React.FC<ModalCarrinhoProps> = ({ isVisible, onClose, carri
             <GridProdutosCarrinho
               itens={carrinho.itens}
               onCarrinhoAtualizado={handleCarrinhoAtualizadoInternamente}
+              idCarrinho={carrinho.idCarrinho || 0}
             />
           ) : (
             <p className={styles.emptyCartText}>Seu carrinho está vazio.</p>

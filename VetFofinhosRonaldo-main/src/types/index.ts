@@ -11,6 +11,7 @@ export interface ProdutoBase {
 
 export interface ItemCarrinhoDetalhado {
   idProduto: number;
+  idCarrinho: number;
   quantidade: number;
   nome: string;      // Nome do produto
   preco: number;     // Preço unitário do produto
