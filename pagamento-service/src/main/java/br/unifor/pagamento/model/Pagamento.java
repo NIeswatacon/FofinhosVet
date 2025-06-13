@@ -24,8 +24,8 @@ public class Pagamento {
     @Column(nullable = false)
     private StatusPagamento status;
     
-    @Enumerated(EnumType.STRING)//indica que o enum será armazenado como String no banco de dados
-    @Column(nullable = false)
+    @Enumerated(EnumType.STRING)
+    @Column(nullable = false, columnDefinition = "varchar(10)")
     private FormaDePagamento formaPagamento;
     
     @Column(nullable = false)

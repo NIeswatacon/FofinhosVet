@@ -7,6 +7,10 @@ import br.unifor.pagamento.Service.PagamentoService;
 import br.unifor.pagamento.exception.PagamentoException;
 import br.unifor.pagamento.model.Pagamento;
 import br.unifor.pagamento.model.StatusPagamento;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
+import org.springframework.http.HttpStatus;
+import br.unifor.pagamento.model.FormaDePagamento;
 
 import java.util.List;
 
@@ -14,6 +18,8 @@ import java.util.List;
 @RestController
 @RequestMapping("/api/pagamentos")
 public class PagamentoController {
+
+    private static final Logger logger = LoggerFactory.getLogger(PagamentoController.class);
 
     @Autowired
     private PagamentoService pagamentoService;
@@ -45,18 +51,35 @@ public class PagamentoController {
 
     @PostMapping
     public ResponseEntity<Pagamento> criarPagamento(@RequestBody Pagamento pagamento) {
-        if (pagamento.getIdUsuario() == null) {
-            return ResponseEntity.badRequest().build();
+        try {
+            logger.info("Recebendo requisição para criar pagamento: {}", pagamento);
+            
+            // Converter o valor da forma de pagamento para o enum correto
+            if (pagamento.getFormaPagamento() != null) {
+                try {
+                    FormaDePagamento formaPagamento = FormaDePagamento.valueOf(pagamento.getFormaPagamento().toString());
+                    pagamento.setFormaPagamento(formaPagamento);
+                } catch (IllegalArgumentException e) {
+                    logger.error("Forma de pagamento inválida: {}", pagamento.getFormaPagamento());
+                    throw new PagamentoException("Forma de pagamento inválida: " + pagamento.getFormaPagamento());
+                }
+            }
+
+            Pagamento pagamentoCriado = pagamentoService.criarPagamento(
+                pagamento.getValor(),
+                pagamento.getFormaPagamento(),
+                pagamento.getIdPedido(),
+                pagamento.getNomeCliente(),
+                pagamento.getCpfCliente(),
+                pagamento.getIdUsuario()
+            );
+            
+            logger.info("Pagamento criado com sucesso: {}", pagamentoCriado);
+            return ResponseEntity.ok(pagamentoCriado);
+        } catch (Exception e) {
+            logger.error("Erro ao criar pagamento: {}", e.getMessage(), e);
+            throw new PagamentoException("Erro ao criar pagamento: " + e.getMessage());
         }
-        Pagamento novoPagamento = pagamentoService.criarPagamento(
-            pagamento.getValor(),
-            pagamento.getFormaPagamento(),
-            pagamento.getIdPedido(),
-            pagamento.getNomeCliente(),
-            pagamento.getCpfCliente(),
-            pagamento.getIdUsuario()
-        );
-        return ResponseEntity.ok(novoPagamento);
     }
 
     @GetMapping("/{id}")

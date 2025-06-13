@@ -69,6 +69,7 @@ const PagamentoComponent: React.FC = () => {
   const [selectedCardId, setSelectedCardId] = useState<number | null>(null);
   const [resumoPagamento, setResumoPagamento] = useState<ResumoPagamento | null>(null);
   const [loading, setLoading] = useState(true);
+  const [showSuccessPopup, setShowSuccessPopup] = useState(false);
 
   const handleCardSelect = (cartao: Cartao) => {
     setSelectedCardId(cartao.id ?? null); // Se cartao.id for undefined, usa null
@@ -411,6 +412,44 @@ const PagamentoComponent: React.FC = () => {
     }
   };
 
+  const handleFinalizarCompra = async () => {
+    if (!resumoPagamento) return;
+    setIsLoading(true);
+    setError(null);
+
+    try {
+      const userStr = localStorage.getItem('user');
+      if (!userStr) throw new Error('Usuário não encontrado');
+      const user = JSON.parse(userStr);
+      const idCliente = user.id;
+      const idCarrinho = resumoPagamento.produtos[0]?.idCarrinho || 0;
+
+      // 1. Atualizar status dos agendamentos para "PAGO"
+      await Promise.all(resumoPagamento.agendamentos.map(agendamento =>
+        axios.patch(`${API_URLS.servicos}/agendamentos/${agendamento.id}/status`, { statusPagamento: 'PAGO' }, {
+          headers: { 'Content-Type': 'application/json' }
+        })
+      ));
+
+      // 2. Esvaziar carrinho
+      await axios.post(`${API_URLS.vendas}/carrinho/${idCliente}/${idCarrinho}/esvaziar`, {}, {
+        headers: { 'Content-Type': 'application/json' }
+      });
+
+      // 3. Mostrar popup de sucesso e atualizar a página
+      setShowSuccessPopup(true);
+      setTimeout(() => {
+        setShowSuccessPopup(false);
+        window.location.reload();
+      }, 2000);
+    } catch (err) {
+      setError('Erro ao finalizar pagamento. Tente novamente.');
+      console.error('Erro ao finalizar pagamento:', err);
+    } finally {
+      setIsLoading(false);
+    }
+  };
+
   // Se o valor do pagamento vier de outro lugar (ex: carrinho), você pode recebê-lo via props ou estado global
   // e definir no useEffect. Exemplo:
   // useEffect(() => {
@@ -522,6 +561,14 @@ const PagamentoComponent: React.FC = () => {
               onClick={() => navigate('/agendamentos')} // Ajustar rota se necessário
             >
               Voltar para Agendamentos
+            </button>
+            <button
+              type="button"
+              className="payment-button"
+              onClick={handleFinalizarCompra}
+              disabled={isLoading}
+            >
+              {isLoading ? 'Processando...' : 'Finalizar Compra'}
             </button>
           </div>
         ) : (
@@ -657,6 +704,12 @@ const PagamentoComponent: React.FC = () => {
           </form>
         )}
       </div>
+
+      {showSuccessPopup && (
+        <div className="popup-success">
+          <h2>Pagamento realizado com sucesso!</h2>
+        </div>
+      )}
     </div>
   );
 };
