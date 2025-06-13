@@ -53,18 +53,7 @@ public class PagamentoController {
     public ResponseEntity<Pagamento> criarPagamento(@RequestBody Pagamento pagamento) {
         try {
             logger.info("Recebendo requisição para criar pagamento: {}", pagamento);
-            
-            // Converter o valor da forma de pagamento para o enum correto
-            if (pagamento.getFormaPagamento() != null) {
-                try {
-                    FormaDePagamento formaPagamento = FormaDePagamento.valueOf(pagamento.getFormaPagamento().toString());
-                    pagamento.setFormaPagamento(formaPagamento);
-                } catch (IllegalArgumentException e) {
-                    logger.error("Forma de pagamento inválida: {}", pagamento.getFormaPagamento());
-                    throw new PagamentoException("Forma de pagamento inválida: " + pagamento.getFormaPagamento());
-                }
-            }
-
+            // Não faz conversão manual do enum, deixa o Jackson converter
             Pagamento pagamentoCriado = pagamentoService.criarPagamento(
                 pagamento.getValor(),
                 pagamento.getFormaPagamento(),
@@ -73,7 +62,6 @@ public class PagamentoController {
                 pagamento.getCpfCliente(),
                 pagamento.getIdUsuario()
             );
-            
             logger.info("Pagamento criado com sucesso: {}", pagamentoCriado);
             return ResponseEntity.ok(pagamentoCriado);
         } catch (Exception e) {

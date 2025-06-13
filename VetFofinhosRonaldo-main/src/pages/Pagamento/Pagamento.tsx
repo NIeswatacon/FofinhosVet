@@ -316,98 +316,61 @@ const PagamentoComponent: React.FC = () => {
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
-    console.log('handleSubmit: Função iniciada.'); // Log no início da função
     setError(null);
-
-    // Obter ID do usuário do localStorage
-    const userStr = localStorage.getItem('user');
-    if (!userStr) {
-      setError('Usuário não encontrado. Por favor, faça login novamente.');
-      console.log('handleSubmit: Usuário não encontrado, saindo.');
-      return;
-    }
-
-    const user = JSON.parse(userStr);
-    if (!user.id) {
-      setError('ID do usuário não encontrado. Por favor, faça login novamente.');
-      console.log('handleSubmit: ID do usuário não encontrado, saindo.');
-      return;
-    }
 
     // Simular idPedido - Em um app real, viria do estado global/contexto/props
     const idPedidoSimulado = Math.floor(Math.random() * 1000) + 1; // Substituir pela lógica real
 
     const currentFormData = {
       ...formData,
-      idUsuario: user.id,
+      idUsuario: 1, // Valor fixo só para não faltar campo
       idPedido: idPedidoSimulado,
     };
-
-    console.log('handleSubmit: Chamando validateForm()...');
-    if (!validateForm()) {
-      console.log('handleSubmit: validateForm() retornou false, saindo.');
-      return;
-    }
 
     setIsLoading(true);
 
     try {
-      console.log('Iniciando handleSubmit (dentro do try)...');
       // Criar cartão apenas se for um novo cartão e a forma de pagamento for CARTAO
       if (currentFormData.formaPagamento === FormaPagamento.CARTAO && !selectedCardId) {
-        console.log('Tentando criar novo cartão...');
         const cartaoData = {
-          numeroCartao: currentFormData.numeroCartao!.replace(/\D/g, ''),
-          nomeTitular: currentFormData.nomeTitular!,
-          dataValidade: currentFormData.dataValidade!.replace(/\D/g, ''), // Remover todos os caracteres não numéricos
-          cvv: currentFormData.cvv!,
+          numeroCartao: currentFormData.numeroCartao?.replace(/\D/g, '') || '',
+          nomeTitular: currentFormData.nomeTitular || '',
+          dataValidade: currentFormData.dataValidade?.replace(/\D/g, '') || '',
+          cvv: currentFormData.cvv || '',
           tipoCartao: currentFormData.tipoCartao === 'DEBITO' ? TipoCartao.DEBITO : TipoCartao.CREDITO,
-          cpfTitular: currentFormData.cpfCliente.replace(/\D/g, ''),
-          idUsuario: user.id
+          cpfTitular: currentFormData.cpfCliente?.replace(/\D/g, '') || '',
+          idUsuario: 1
         };
-
-        console.log('Dados do cartão a serem enviados:', cartaoData);
         await cartaoService.criarCartao(cartaoData);
-        console.log('Cartão criado com sucesso no frontend.');
-        
-        // Recarregar lista de cartões após salvar
-        console.log('Recarregando cartões salvos...');
-        const lista = await cartaoService.buscarCartoesPorUsuario(user.id);
+        const lista = await cartaoService.buscarCartoesPorUsuario(1);
         setCartoesSalvos(lista);
-        console.log('Cartões salvos recarregados.');
       }
 
+      let formaPagamentoFinal = 'PIX';
+      if (currentFormData.formaPagamento === FormaPagamento.CARTAO) {
+        formaPagamentoFinal = currentFormData.tipoCartao === 'DEBITO' ? 'CARTAO_DEBITO' : 'CARTAO_CREDITO';
+      }
+      // Se for PIX, mantém 'PIX'
+
       const pagamentoData: Pagamento = {
-        valor: Number(currentFormData.valor.replace(/\D/g, '')),
-        formaPagamento: currentFormData.formaPagamento,
+        valor: Number(currentFormData.valor?.replace(/\D/g, '')),
+        formaPagamento: formaPagamentoFinal as any, // força o tipo para aceitar string
         status: StatusPagamento.PENDENTE,
-        idPedido: currentFormData.idPedido!,
-        nomeCliente: currentFormData.formaPagamento === FormaPagamento.CARTAO ? currentFormData.nomeTitular! : 'Cliente PIX/Boleto',
-        cpfCliente: currentFormData.cpfCliente.replace(/\D/g, ''),
-        idUsuario: user.id,
+        idPedido: currentFormData.idPedido,
+        nomeCliente: currentFormData.nomeTitular || 'Cliente',
+        cpfCliente: currentFormData.cpfCliente?.replace(/\D/g, '') || '',
+        idUsuario: 1,
       };
 
       console.log('Criando pagamento com os dados:', pagamentoData);
       const response = await pagamentoService.criarPagamento(pagamentoData);
-      console.log('Pagamento criado com sucesso:', response);
       setSuccess(true);
-      
       if (currentFormData.formaPagamento === FormaPagamento.PIX && response.chavePix) {
         setPixKey(response.chavePix);
-      } else if (currentFormData.formaPagamento === FormaPagamento.CARTAO) {
-        console.log("Pagamento com cartão enviado:", response);
       }
     } catch (err) {
-      console.error("Erro no handleSubmit:", err);
-      if (err instanceof PagamentoError || err instanceof CartaoError) {
-        setError(err.message);
-      } else if (axios.isAxiosError(err) && err.response) {
-        setError(err.response.data?.message || 'Erro ao processar pagamento.');
-      } else {
-        setError('Ocorreu um erro inesperado ao processar o pagamento.');
-      }
+      setError('Ocorreu um erro inesperado ao processar o pagamento.');
     } finally {
-      console.log('Finalizando handleSubmit.');
       setIsLoading(false);
     }
   };
