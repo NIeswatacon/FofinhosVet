@@ -405,4 +405,81 @@
     width: 100%;
     padding: 1rem 0.7rem;
   }
+}
+
+.pagamento-container {
+  max-width: 1200px;
+  margin: 0 auto;
+  padding: 20px;
+}
+
+.resumo-pagamento {
+  background-color: #fff;
+  border-radius: 8px;
+  padding: 20px;
+  margin-bottom: 30px;
+  box-shadow: 0 2px 4px rgba(0, 0, 0, 0.1);
+}
+
+.resumo-pagamento h3 {
+  color: #333;
+  margin-bottom: 20px;
+  font-size: 1.5em;
+}
+
+.secao-produtos,
+.secao-agendamentos {
+  margin-bottom: 30px;
+}
+
+.secao-produtos h4,
+.secao-agendamentos h4 {
+  color: #666;
+  margin-bottom: 15px;
+  font-size: 1.2em;
+}
+
+.item-produto,
+.item-agendamento {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  padding: 10px;
+  border-bottom: 1px solid #eee;
+}
+
+.item-produto:last-child,
+.item-agendamento:last-child {
+  border-bottom: none;
+}
+
+.subtotal {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  padding: 15px 10px;
+  margin-top: 10px;
+  background-color: #f8f9fa;
+  border-radius: 4px;
+}
+
+.valor-total {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  padding: 20px;
+  margin-top: 20px;
+  background-color: #e9ecef;
+  border-radius: 4px;
+}
+
+.valor-total h3 {
+  margin: 0;
+  color: #333;
+}
+
+.valor-total span {
+  font-size: 1.5em;
+  font-weight: bold;
+  color: #28a745;
 } 

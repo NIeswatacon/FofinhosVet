@@ -3,7 +3,10 @@ import { useNavigate } from 'react-router-dom';
 import { QRCodeSVG } from 'qrcode.react';
 import { pagamentoService, FormaPagamento, PagamentoError } from '../../services/pagamentoService';
 import type { Pagamento } from '../../services/pagamentoService';
-import { cartaoService, TipoCartao, CartaoError, type Cartao } from '../../services/cartaoService'; // Importar o tipo Cartao
+import { cartaoService, TipoCartao, CartaoError, type Cartao } from '../../services/cartaoService';
+import axios from 'axios';
+import { API_URLS } from '../../services/api';
+import type { CarrinhoDetalhado, ItemCarrinhoDetalhado } from '../../types';
 import './Pagamento.css';
 
 console.log('PagamentoComponent: Arquivo carregado.'); // Este log deve aparecer assim que o componente é processado
@@ -29,6 +32,22 @@ interface PaymentFormData {
   cpfCliente: string;
 }
 
+interface Agendamento {
+  id: number;
+  data: string; // Formato YYYY-MM-DD
+  servico: string;
+  valorServico?: number;
+  status?: string;
+  // outros campos opcionais
+}
+
+interface ResumoPagamento {
+  produtos: ItemCarrinhoDetalhado[];
+  agendamentos: Agendamento[];
+  totalProdutos: number;
+  totalAgendamentos: number;
+  valorTotal: number;
+}
 
 const PagamentoComponent: React.FC = () => {
   console.log("Renderizando PagamentoComponent");
@@ -48,6 +67,8 @@ const PagamentoComponent: React.FC = () => {
   const [loadingCartoes, setLoadingCartoes] = useState(false);
   const [erroCartoes, setErroCartoes] = useState<string | null>(null);
   const [selectedCardId, setSelectedCardId] = useState<number | null>(null);
+  const [resumoPagamento, setResumoPagamento] = useState<ResumoPagamento | null>(null);
+  const [loading, setLoading] = useState(true);
 
   const handleCardSelect = (cartao: Cartao) => {
     setSelectedCardId(cartao.id ?? null); // Se cartao.id for undefined, usa null
@@ -104,6 +125,77 @@ const PagamentoComponent: React.FC = () => {
       }
     }
     fetchCartoesSalvos();
+  }, []);
+
+  useEffect(() => {
+    const fetchDadosPagamento = async () => {
+      setLoading(true);
+      setError(null);
+
+      try {
+        const userStr = localStorage.getItem('user');
+        if (!userStr) {
+          throw new Error('Usuário não encontrado');
+        }
+
+        const user = JSON.parse(userStr);
+        const idCliente = user.id;
+        const token = localStorage.getItem('token');
+
+        // Buscar carrinho do cliente
+        const carrinhoResponse = await axios.get<{ success: boolean; data: CarrinhoDetalhado }>(
+          `${API_URLS.vendas}/carrinho/${idCliente}`,
+          {
+            headers: {
+              'Content-Type': 'application/json'
+            }
+          }
+        );
+
+        // Buscar agendamentos do cliente
+        const agendamentosResponse = await axios.get<Agendamento[]>(
+          `${API_URLS.servicos}/agendamentos/cliente/${idCliente}`,
+          {
+            headers: {
+              'Content-Type': 'application/json'
+            }
+          }
+        );
+
+        const carrinho = carrinhoResponse.data.data; // Acessar a propriedade data da resposta
+        const agendamentos = agendamentosResponse.data;
+
+        // Adicionar log para depuração
+        console.log('Agendamentos recebidos:', agendamentos);
+
+        // Calcular totais
+        const totalProdutos = Number(carrinho.total) || 0;
+        const totalAgendamentos = agendamentos.reduce((sum, agendamento) => sum + Number(agendamento.valorServico || 0), 0);
+        const valorTotal = totalProdutos + totalAgendamentos;
+
+        setResumoPagamento({
+          produtos: carrinho.itens || [],
+          agendamentos: agendamentos,
+          totalProdutos,
+          totalAgendamentos,
+          valorTotal
+        });
+
+        // Atualizar o valor no formData
+        setFormData(prev => ({
+          ...prev,
+          valor: valorTotal.toString()
+        }));
+
+      } catch (err) {
+        console.error('Erro ao buscar dados para pagamento:', err);
+        setError('Erro ao carregar dados para pagamento. Por favor, tente novamente.');
+      } finally {
+        setLoading(false);
+      }
+    };
+
+    fetchDadosPagamento();
   }, []);
 
   // Formatação de valores
@@ -327,210 +419,246 @@ const PagamentoComponent: React.FC = () => {
   // }, []);
 
   return (
-    <div className="payment-container">
+    <div className="pagamento-container">
       <h2>Pagamento</h2>
-      <div className="cartoes-salvos-section">
-        <h3>Cartões Salvos</h3>
-        {loadingCartoes && <div className="loading">Carregando cartões...</div>}
-        {erroCartoes && <div className="error-message">{erroCartoes}</div>}
-        {!loadingCartoes && !erroCartoes && cartoesSalvos.length === 0 && (
-          <div className="empty">Nenhum cartão salvo.</div>
-        )}
-        {!loadingCartoes && !erroCartoes && cartoesSalvos.length > 0 && (
-          <div className="cartoes-grid">
-            {cartoesSalvos.map(cartao => (
-              <div 
-                className={`cartao-salvo-item ${selectedCardId === cartao.id ? 'selected' : ''}`}
-                key={cartao.id}
-                onClick={() => handleCardSelect(cartao)}
-                role="button" // Adicionar role para acessibilidade
-                tabIndex={0}  // Adicionar tabIndex para acessibilidade
-                onKeyPress={(e) => e.key === 'Enter' && handleCardSelect(cartao)} // Adicionar evento de teclado
-                style={{ cursor: 'pointer', border: '1px solid #ccc', padding: '10px', margin: '5px', borderRadius: '5px' }}
-              >
-                <div className="cartao-numero">•••• •••• •••• {cartao.numeroCartao.slice(-4)}</div>
-                <div className="cartao-nome">{cartao.nomeTitular}</div>
-                <div className="cartao-tipo">{cartao.tipoCartao}</div>
+
+      {loading && <p>Carregando dados...</p>}
+      {error && <p className="error-message">{error}</p>}
+
+      {resumoPagamento && (
+        <div className="resumo-pagamento">
+          <h3>Resumo do Pagamento</h3>
+          
+          {/* Produtos do Carrinho */}
+          <div className="secao-produtos">
+            <h4>Produtos no Carrinho</h4>
+            {resumoPagamento.produtos.map(item => (
+              <div key={item.idProduto} className="item-produto">
+                <span>{item.nome}</span>
+                <span>Quantidade: {item.quantidade}</span>
+                <span>R$ {Number((item.preco || 0) * (item.quantidade || 0)).toFixed(2)}</span>
               </div>
             ))}
+            <div className="subtotal">
+              <strong>Subtotal Produtos:</strong>
+              <span>R$ {Number(resumoPagamento.totalProdutos || 0).toFixed(2)}</span>
+            </div>
+          </div>
+
+          {/* Agendamentos */}
+          <div className="secao-agendamentos">
+            <h4>Agendamentos</h4>
+            {resumoPagamento.agendamentos.map(agendamento => (
+              <div key={agendamento.id} className="item-agendamento">
+                <span>{agendamento.servico}</span>
+                <span>{agendamento.data ? new Date(agendamento.data + 'T00:00:00').toLocaleDateString('pt-BR') : '-'}</span>
+                <span>R$ {Number(agendamento.valorServico || 0).toFixed(2)}</span>
+              </div>
+            ))}
+            <div className="subtotal">
+              <strong>Subtotal Agendamentos:</strong>
+              <span>R$ {Number(resumoPagamento.totalAgendamentos || 0).toFixed(2)}</span>
+            </div>
+          </div>
+
+          {/* Valor Total */}
+          <div className="valor-total">
+            <h3>Valor Total a Pagar</h3>
+            <span>R$ {Number(resumoPagamento.valorTotal || 0).toFixed(2)}</span>
+          </div>
+        </div>
+      )}
+
+      <div className="payment-container">
+        <h2>Pagamento</h2>
+        <div className="cartoes-salvos-section">
+          <h3>Cartões Salvos</h3>
+          {loadingCartoes && <div className="loading">Carregando cartões...</div>}
+          {erroCartoes && <div className="error-message">{erroCartoes}</div>}
+          {!loadingCartoes && !erroCartoes && cartoesSalvos.length === 0 && (
+            <div className="empty">Nenhum cartão salvo.</div>
+          )}
+          {!loadingCartoes && !erroCartoes && cartoesSalvos.length > 0 && (
+            <div className="cartoes-grid">
+              {cartoesSalvos.map(cartao => (
+                <div 
+                  className={`cartao-salvo-item ${selectedCardId === cartao.id ? 'selected' : ''}`}
+                  key={cartao.id}
+                  onClick={() => handleCardSelect(cartao)}
+                  role="button" // Adicionar role para acessibilidade
+                  tabIndex={0}  // Adicionar tabIndex para acessibilidade
+                  onKeyPress={(e) => e.key === 'Enter' && handleCardSelect(cartao)} // Adicionar evento de teclado
+                  style={{ cursor: 'pointer', border: '1px solid #ccc', padding: '10px', margin: '5px', borderRadius: '5px' }}
+                >
+                  <div className="cartao-numero">•••• •••• •••• {cartao.numeroCartao.slice(-4)}</div>
+                  <div className="cartao-nome">{cartao.nomeTitular}</div>
+                  <div className="cartao-tipo">{cartao.tipoCartao}</div>
+                </div>
+              ))}
+            </div>
+          )}
+        </div>
+        
+        {error && (
+          <div className="error-message" role="alert"> {/* Adicionar role para acessibilidade */}
+            {error}
           </div>
         )}
-      </div>
-      
-      {error && (
-        <div className="error-message" role="alert"> {/* Adicionar role para acessibilidade */}
-          {error}
-        </div>
-      )}
 
-      {success ? (
-        <div className="success-message">
-          <h2>Pagamento Processado com Sucesso!</h2>
-          <p>Seu pagamento foi recebido e está sendo processado.</p>
-          {pixKey && (
-            <div className="qr-code-container">
-              <QRCodeSVG value={pixKey} size={200} />
-              <p>Escaneie o QR Code para pagar via PIX</p>
-              <p><strong>Chave PIX:</strong> {pixKey}</p> {/* Mostrar a chave PIX também */}
-            </div>
-          )}
-          <button
-            type="button" // Adicionar type="button"
-            className="payment-button"
-            onClick={() => navigate('/agendamentos')} // Ajustar rota se necessário
-          >
-            Voltar para Agendamentos
-          </button>
-        </div>
-      ) : (
-        <form onSubmit={handleSubmit} className="payment-form">
-          <div className="form-group"> {/* Mover valor para dentro do form */}
-            <label htmlFor="valor">Valor Total</label>
-            <input
-              type="text"
-              id="valor"
-              name="valor"
-              value={formatCurrency(formData.valor)} // Mostrar valor formatado
-              onChange={handleInputChange}
-              placeholder="R$ 0,00"
-              required
-            />
-          </div>
-
-          <div className="payment-methods">
-            <h3>Forma de Pagamento</h3>
-            <div className="payment-method-buttons">
-              <button
-                type="button"
-                className={`payment-method-button ${formData.formaPagamento === FormaPagamento.CARTAO ? 'active' : ''}`}
-                onClick={() => handlePaymentMethodChange(FormaPagamento.CARTAO)}
-              >
-                Cartão ({formData.tipoCartao === 'DEBITO' ? 'Débito' : 'Crédito'})
-              </button>
-              <button
-                type="button"
-                className={`payment-method-button ${formData.formaPagamento === FormaPagamento.PIX ? 'active' : ''}`}
-                onClick={() => handlePaymentMethodChange(FormaPagamento.PIX)}
-              >
-                PIX
-              </button>
-            </div>
-          </div>
-
-          {formData.formaPagamento === FormaPagamento.CARTAO && ( // Remover a condição extra de tipoCartao aqui
-            <>
-              <div className="form-group">
-                <label htmlFor="numeroCartao">Número do Cartão</label>
-                <input
-                  type="text"
-                  id="numeroCartao"
-                  name="numeroCartao"
-                  value={formData.numeroCartao ?? ''} 
-                  onChange={handleInputChange}
-                  placeholder="0000 0000 0000 0000"
-                  maxLength={19} // 16 dígitos + 3 espaços
-                  required={formData.formaPagamento === FormaPagamento.CARTAO}
-                />
+        {success ? (
+          <div className="success-message">
+            <h2>Pagamento Processado com Sucesso!</h2>
+            <p>Seu pagamento foi recebido e está sendo processado.</p>
+            {pixKey && (
+              <div className="qr-code-container">
+                <QRCodeSVG value={pixKey} size={200} />
+                <p>Escaneie o QR Code para pagar via PIX</p>
+                <p><strong>Chave PIX:</strong> {pixKey}</p> {/* Mostrar a chave PIX também */}
               </div>
-
-              <div className="form-row">
-                <div className="form-group">
-                  <label htmlFor="dataValidade">Data de Validade</label>
-                  <input
-                    type="text"
-                    id="dataValidade"
-                    name="dataValidade"
-                    value={formData.dataValidade ?? ''}
-                    onChange={handleInputChange}
-                    placeholder="MM/AA"
-                    maxLength={5} // MM/AA
-                    required={formData.formaPagamento === FormaPagamento.CARTAO}
-                  />
-                </div>
-
-                <div className="form-group">
-                  <label htmlFor="cvv">CVV</label>
-                  <input
-                    type="text" // Usar text para permitir formatação, mas validar como número
-                    id="cvv"
-                    name="cvv"
-                    value={formData.cvv ?? ''}
-                    onChange={handleInputChange}
-                    placeholder="123"
-                    maxLength={4} // CVV Amex tem 4 dígitos
-                    required={formData.formaPagamento === FormaPagamento.CARTAO}
-                  />
-                </div>
-              </div>
-
-              <div className="form-group">
-                <label htmlFor="nomeTitular">Nome do Titular</label>
-                <input
-                  type="text"
-                  id="nomeTitular"
-                  name="nomeTitular"
-                  value={formData.nomeTitular ?? ''}
-                  onChange={handleInputChange}
-                  placeholder="Nome como está no cartão"
-                  required={formData.formaPagamento === FormaPagamento.CARTAO}
-                />
-              </div>
-
-              
-            </>
-          )}
-          
-          {formData.formaPagamento === FormaPagamento.PIX && (
-            <div className="pix-payment">
-              <p>O QR Code do PIX será gerado após a confirmação do pagamento.</p>
-            </div>
-          )}
-
-          <div className="form-group">
-            <label htmlFor="cpfCliente">CPF do Cliente</label>
-            <input
-              type="text"
-              id="cpfCliente"
-              name="cpfCliente"
-              value={formData.cpfCliente}
-              onChange={handleInputChange}
-              placeholder="000.000.000-00"
-              maxLength={14} // 11 dígitos + 3 caracteres de formatação
-              required
-            />
-          </div>
-
-          <div className="button-group">
+            )}
             <button
-              type="button"
-              className="payment-button secondary"
+              type="button" // Adicionar type="button"
+              className="payment-button"
               onClick={() => navigate('/agendamentos')} // Ajustar rota se necessário
             >
-              Cancelar
-            </button>
-            <button
-              type="button"
-              className="payment-button secondary"
-              onClick={() => navigate('/cartao')} // Ajustar rota para cadastro de cartão
-            >
-              Adicionar Novo Cartão
-            </button>
-            <button
-              type="submit"
-              className="payment-button"
-              disabled={isLoading}
-            >
-              {isLoading ? 'Processando...' : 'Pagar'}
+              Voltar para Agendamentos
             </button>
           </div>
-        </form>
-      )}
+        ) : (
+          <form onSubmit={handleSubmit} className="payment-form">
+            
+
+            <div className="payment-methods">
+              <h3>Forma de Pagamento</h3>
+              <div className="payment-method-buttons">
+                <button
+                  type="button"
+                  className={`payment-method-button ${formData.formaPagamento === FormaPagamento.CARTAO ? 'active' : ''}`}
+                  onClick={() => handlePaymentMethodChange(FormaPagamento.CARTAO)}
+                >
+                  Cartão ({formData.tipoCartao === 'DEBITO' ? 'Débito' : 'Crédito'})
+                </button>
+                <button
+                  type="button"
+                  className={`payment-method-button ${formData.formaPagamento === FormaPagamento.PIX ? 'active' : ''}`}
+                  onClick={() => handlePaymentMethodChange(FormaPagamento.PIX)}
+                >
+                  PIX
+                </button>
+              </div>
+            </div>
+
+            {formData.formaPagamento === FormaPagamento.CARTAO && ( // Remover a condição extra de tipoCartao aqui
+              <>
+                <div className="form-group">
+                  <label htmlFor="numeroCartao">Número do Cartão</label>
+                  <input
+                    type="text"
+                    id="numeroCartao"
+                    name="numeroCartao"
+                    value={formData.numeroCartao ?? ''} 
+                    onChange={handleInputChange}
+                    placeholder="0000 0000 0000 0000"
+                    maxLength={19} // 16 dígitos + 3 espaços
+                    required={formData.formaPagamento === FormaPagamento.CARTAO}
+                  />
+                </div>
+
+                <div className="form-row">
+                  <div className="form-group">
+                    <label htmlFor="dataValidade">Data de Validade</label>
+                    <input
+                      type="text"
+                      id="dataValidade"
+                      name="dataValidade"
+                      value={formData.dataValidade ?? ''}
+                      onChange={handleInputChange}
+                      placeholder="MM/AA"
+                      maxLength={5} // MM/AA
+                      required={formData.formaPagamento === FormaPagamento.CARTAO}
+                    />
+                  </div>
+
+                  <div className="form-group">
+                    <label htmlFor="cvv">CVV</label>
+                    <input
+                      type="text" // Usar text para permitir formatação, mas validar como número
+                      id="cvv"
+                      name="cvv"
+                      value={formData.cvv ?? ''}
+                      onChange={handleInputChange}
+                      placeholder="123"
+                      maxLength={4} // CVV Amex tem 4 dígitos
+                      required={formData.formaPagamento === FormaPagamento.CARTAO}
+                    />
+                  </div>
+                </div>
+
+                <div className="form-group">
+                  <label htmlFor="nomeTitular">Nome do Titular</label>
+                  <input
+                    type="text"
+                    id="nomeTitular"
+                    name="nomeTitular"
+                    value={formData.nomeTitular ?? ''}
+                    onChange={handleInputChange}
+                    placeholder="Nome como está no cartão"
+                    required={formData.formaPagamento === FormaPagamento.CARTAO}
+                  />
+                </div>
+
+                
+              </>
+            )}
+            
+            {formData.formaPagamento === FormaPagamento.PIX && (
+              <div className="pix-payment">
+                <p>O QR Code do PIX será gerado após a confirmação do pagamento.</p>
+              </div>
+            )}
+
+            <div className="form-group">
+              <label htmlFor="cpfCliente">CPF do Cliente</label>
+              <input
+                type="text"
+                id="cpfCliente"
+                name="cpfCliente"
+                value={formData.cpfCliente}
+                onChange={handleInputChange}
+                placeholder="000.000.000-00"
+                maxLength={14} // 11 dígitos + 3 caracteres de formatação
+                required
+              />
+            </div>
+
+            <div className="button-group">
+              <button
+                type="button"
+                className="payment-button secondary"
+                onClick={() => navigate('/agendamentos')} // Ajustar rota se necessário
+              >
+                Cancelar
+              </button>
+              <button
+                type="button"
+                className="payment-button secondary"
+                onClick={() => navigate('/cartao')} // Ajustar rota para cadastro de cartão
+              >
+                Adicionar Novo Cartão
+              </button>
+              <button
+                type="submit"
+                className="payment-button"
+                disabled={isLoading}
+              >
+                {isLoading ? 'Processando...' : 'Pagar'}
+              </button>
+            </div>
+          </form>
+        )}
+      </div>
     </div>
   );
 };
 
 export default PagamentoComponent;
-
-
-// Adicionar import do Axios se não estiver global ou no serviço de pagamento
-import axios from 'axios';
