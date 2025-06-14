@@ -2,6 +2,7 @@ import React, { useState, useEffect, useCallback } from 'react';
 import GridProdutos from '../../components/GridProdutos/GridProdutos';
 import IconeCarrinho from '../../components/IconeCarrinho/IconeCarrinho';
 import ModalCarrinho from '../../components/ModalCarrinho/ModalCarrinho';
+import AddProductModal from '../../components/AddProductModal/AddProductModal';
 import type { CarrinhoDetalhado } from '../../types';
 import NavBar from '../../components/NavBar/NavBar';
 // import styles from './Vendas.module.css'; // Para estilos dedicados
@@ -11,6 +12,7 @@ import NavBar from '../../components/NavBar/NavBar';
 const Vendas: React.FC = () => {
   const [carrinho, setCarrinho] = useState<CarrinhoDetalhado | null>(null);
   const [modalCarrinhoVisivel, setModalCarrinhoVisivel] = useState(false);
+  const [modalAddProdutoVisivel, setModalAddProdutoVisivel] = useState(false);
   const [currentUserId, setCurrentUserId] = useState<number | null>(null); // Estado para o ID do usuário
   const [user, setUser] = useState<any>(null);
 
@@ -93,6 +95,11 @@ const Vendas: React.FC = () => {
     return carrinho.itens.reduce((total, item) => total + item.quantidade, 0);
   };
 
+  const handleProductAdded = () => {
+    // Refresh the products grid
+    window.location.reload();
+  };
+
   return (
     <div>
       <NavBar />
@@ -113,13 +120,32 @@ const Vendas: React.FC = () => {
       )}
 
       <div style={{ padding: '20px', marginTop: '20px' }}>
-        <h2 style={{
-          textAlign: 'left',
-          marginBottom: '25px',
-          fontSize: '1.8rem',
-          color: '#333',
-          fontWeight: '500'
-        }}>Nossos Produtos</h2>
+        <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '25px' }}>
+          <h2 style={{
+            fontSize: '1.8rem',
+            color: '#333',
+            fontWeight: '500',
+            margin: 0
+          }}>Nossos Produtos</h2>
+          
+          {user?.tipo === 'ADMIN' && (
+            <button
+              onClick={() => setModalAddProdutoVisivel(true)}
+              style={{
+                padding: '10px 20px',
+                backgroundColor: '#007bff',
+                color: 'white',
+                border: 'none',
+                borderRadius: '4px',
+                cursor: 'pointer',
+                fontSize: '1rem'
+              }}
+            >
+              Adicionar Produto
+            </button>
+          )}
+        </div>
+
         {currentUserId ? (
           <GridProdutos
             idCliente={currentUserId}
@@ -132,6 +158,14 @@ const Vendas: React.FC = () => {
           </div>
         )}
       </div>
+
+      {user?.tipo === 'ADMIN' && (
+        <AddProductModal
+          isVisible={modalAddProdutoVisivel}
+          onClose={() => setModalAddProdutoVisivel(false)}
+          onProductAdded={handleProductAdded}
+        />
+      )}
     </div>
   );
 };
