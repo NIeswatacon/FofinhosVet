@@ -90,7 +90,7 @@ const NavBar: React.FC = () => {
         {isLoggedIn && user?.tipo === 'ADMIN' && (
           <li>
             <NavLink to="/admin-agendamentos" className={({ isActive }) => isActive ? styles.activeLink : undefined}>
-              Agendamentos (Admin)
+              Agendamentos
             </NavLink>
           </li>
         )}
