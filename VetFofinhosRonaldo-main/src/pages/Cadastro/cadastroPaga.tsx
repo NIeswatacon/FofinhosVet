@@ -121,7 +121,7 @@ const CadastroPaga: React.FC = () => {
     try {
       // Remove o campo confirmarSenha antes de enviar
       const { confirmarSenha, ...dadosCadastro } = form;
-      
+
       const url = `${API_URLS.conta}/api/contas`;
 
       console.log('=== DETALHES DA REQUISIÇÃO DE CADASTRO ===');
@@ -131,19 +131,19 @@ const CadastroPaga: React.FC = () => {
         'Content-Type': 'application/json'
       });
       console.log('=========================================');
-      
+
       const response = await axios.post(url, dadosCadastro);
-      
+
       console.log('Resposta COMPLETA da API:', response);
       console.log('Dados da Resposta da API:', response.data);
       console.log('Status da Resposta da API:', response.status);
-      
+
       if (response.status >= 200 && response.status < 300) {
         console.log('Cadastro realizado com sucesso');
         setSubmitted(true);
-        // Redireciona para a página inicial após 2 segundos
+        // Redireciona para a página de login após 2 segundos
         setTimeout(() => {
-          navigate('/');
+          navigate('/login');
         }, 2000);
       } else {
         console.error('Cadastro falhou com status inesperado:', response.status, response.data);
@@ -152,16 +152,16 @@ const CadastroPaga: React.FC = () => {
     } catch (err: any) {
       console.error('=== ERRO NO CADASTRO ===');
       console.error('Erro completo (Axios):', err);
-      
+
       if (err.response) {
         console.error('Detalhes da resposta de erro do backend:', err.response.data);
         console.error('Status da resposta de erro:', err.response.status);
-        
+
         let errorMessage = 'Erro ao realizar cadastro. Por favor, tente novamente.';
         if (err.response.data && err.response.data.message) {
-            errorMessage = err.response.data.message;
+          errorMessage = err.response.data.message;
         } else if (typeof err.response.data === 'string') {
-            errorMessage = err.response.data;
+          errorMessage = err.response.data;
         }
 
         if (err.response.status === 400) {
@@ -186,9 +186,9 @@ const CadastroPaga: React.FC = () => {
       <PawsBackground />
       <form className="cadastro-paga-form" onSubmit={handleSubmit}>
         <h2>Crie sua conta</h2>
-        
+
         {error && <div className="error-message">{error}</div>}
-        
+
         <div className="form-group">
           <label htmlFor="nome">Nome Completo</label>
           <input
@@ -295,7 +295,7 @@ const CadastroPaga: React.FC = () => {
           <button type="submit" className="cadastro-btn">Cadastrar</button>
           <button type="button" className="voltar-login-btn" onClick={() => navigate('/login')}>Voltar para Login</button>
         </div>
-        
+
         {submitted && (
           <div className="success-message">
             <p>Cadastro realizado com sucesso!</p>

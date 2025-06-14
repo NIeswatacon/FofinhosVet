@@ -85,6 +85,8 @@ const CardProduto: React.FC<CardProdutoProps> = ({ produto, onProdutoAdicionado,
     const [editando, setEditando] = React.useState(false);
     const [novoNome, setNovoNome] = React.useState(produto.nome);
     const [novoPreco, setNovoPreco] = React.useState(produto.preco);
+    const [novoTipo, setNovoTipo] = React.useState<ProdutoBase['tipo']>(produto.tipo);
+    const [novaDescricao, setNovaDescricao] = React.useState(produto.descricao || '');
 
     const getImagemGenerica = (tipo: ProdutoBase['tipo']): string => {
         const basePath = '/img/'; // Ajuste se suas imagens estiverem em outro lugar na pasta public
@@ -193,8 +195,14 @@ const CardProduto: React.FC<CardProdutoProps> = ({ produto, onProdutoAdicionado,
             <div className={styles.productInfo}>
                 {editando ? (
                     <>
-                        <input value={novoNome} onChange={e => setNovoNome(e.target.value)} style={{ marginBottom: 4, width: '90%' }} />
-                        <input type="number" value={novoPreco} onChange={e => setNovoPreco(Number(e.target.value))} style={{ marginBottom: 4, width: '90%' }} />
+                        <input value={novoNome} onChange={e => setNovoNome(e.target.value)} style={{ marginBottom: 4, width: '90%' }} placeholder="Nome do produto" />
+                        <input type="number" value={novoPreco} onChange={e => setNovoPreco(Number(e.target.value))} style={{ marginBottom: 4, width: '90%' }} placeholder="Preço" />
+                        <select value={novoTipo} onChange={e => setNovoTipo(e.target.value as ProdutoBase['tipo'])} style={{ marginBottom: 4, width: '90%' }}>
+                            <option value="RACAO">Ração</option>
+                            <option value="REMEDIO">Remédio</option>
+                            <option value="BRINQUEDO">Brinquedo</option>
+                        </select>
+                        <textarea value={novaDescricao} onChange={e => setNovaDescricao(e.target.value)} style={{ marginBottom: 4, width: '90%' }} placeholder="Descrição" rows={2} />
                     </>
                 ) : (
                     <>
@@ -208,11 +216,12 @@ const CardProduto: React.FC<CardProdutoProps> = ({ produto, onProdutoAdicionado,
                     {editando ? (
                         <>
                             <button className={styles.addToCartButton} style={{ background: '#007bff' }} onClick={async () => {
-                                // Chamar endpoint de edição de produto (ajuste a URL conforme seu backend)
                                 try {
                                     await axios.put(`https://microservicevendas-production.up.railway.app/produtos/${produto.id}`, {
                                         nome: novoNome,
-                                        preco: novoPreco
+                                        preco: novoPreco,
+                                        tipo: novoTipo,
+                                        descricao: novaDescricao
                                     });
                                     setEditando(false);
                                     window.location.reload();
