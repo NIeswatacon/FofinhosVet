@@ -86,10 +86,16 @@ public class ClienteController {
         }
     }
 
-
-    
     @GetMapping
     public ResponseEntity<List<ClienteDTO>> listarTodosClientes() {
+        List<ClienteDTO> clientes = clienteService.listarTodosClientes().stream()
+                .map(this::clienteToDTO)
+                .collect(Collectors.toList());
+        return ResponseEntity.ok(clientes);
+    }
+
+    @GetMapping("/clientes")
+    public ResponseEntity<List<ClienteDTO>> listarTodosClientesNovoCaminho() {
         List<ClienteDTO> clientes = clienteService.listarTodosClientes().stream()
                 .map(this::clienteToDTO)
                 .collect(Collectors.toList());
@@ -106,7 +112,7 @@ public class ClienteController {
 
     @PutMapping("/me")
     public ResponseEntity<ClienteDTO> atualizarCliente(@RequestHeader("X-User-ID") String userId,
-                                                       @Valid @RequestBody ClienteDTO clienteDTO) {
+            @Valid @RequestBody ClienteDTO clienteDTO) {
         try {
             Cliente cliente = clienteToEntity(clienteDTO);
             Cliente clienteAtualizado = clienteService.atualizarCliente(Long.parseLong(userId), cliente);
@@ -118,7 +124,7 @@ public class ClienteController {
 
     @PutMapping("/{id}")
     public ResponseEntity<ClienteDTO> atualizarClientePorId(@PathVariable Long id,
-                                                            @Valid @RequestBody ClienteDTO clienteDTO) {
+            @Valid @RequestBody ClienteDTO clienteDTO) {
         try {
             Cliente cliente = clienteToEntity(clienteDTO);
             Cliente clienteAtualizado = clienteService.atualizarCliente(id, cliente);
@@ -150,7 +156,7 @@ public class ClienteController {
 
     @PostMapping("/me/pets")
     public ResponseEntity<PetDTO> criarPetParaCliente(@RequestHeader("X-User-ID") String userId,
-                                                      @RequestBody PetDTO petDTO) {
+            @RequestBody PetDTO petDTO) {
         try {
             PetDTO novoPet = petService.criarPet(Long.parseLong(userId), petDTO);
             return new ResponseEntity<>(novoPet, HttpStatus.CREATED);
@@ -171,7 +177,7 @@ public class ClienteController {
 
     @GetMapping("/me/pets/{petId}")
     public ResponseEntity<PetDTO> buscarPetDoCliente(@RequestHeader("X-User-ID") String userId,
-                                                     @PathVariable Long petId) {
+            @PathVariable Long petId) {
         return petService.buscarPetDoClientePorId(Long.parseLong(userId), petId)
                 .map(this::petToDTO)
                 .map(ResponseEntity::ok)

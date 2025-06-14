@@ -81,49 +81,31 @@ const Login: React.FC = () => {
   const handleLogin = async (e: React.FormEvent) => {
     e.preventDefault();
     setError(null);
-
-    console.log('=== INÍCIO DO LOGIN NO FRONTEND ===');
-    console.log('Email:', email);
-    console.log('Senha:', senha);
-
     try {
-      // Faz a requisição de login usando a URL específica do serviço de conta
-      console.log('Enviando requisição para:', `${API_URLS.conta}/api/contas/auth/login`);
-      const response = await axios.post(`${API_URLS.conta}/api/contas/auth/login`, {
-        email,
-        senha
-      });
-
-      console.log('Resposta recebida:', response.data);
-
-      // Se o login for bem-sucedido, salva o token
+      // Tenta login como admin primeiro
+      let url = `${API_URLS.conta}/api/contas/admin/auth/login`;
+      let response;
+      try {
+        response = await axios.post(url, { email, senha });
+      } catch (err: any) {
+        // Se não for admin, tenta como cliente
+        url = `${API_URLS.conta}/api/contas/auth/login`;
+        response = await axios.post(url, { email, senha });
+      }
       if (response.data && response.data.token) {
-        console.log('Token recebido, salvando no localStorage');
         localStorage.setItem('token', response.data.token);
-        // Decodifica o token para obter informações do usuário
         const tokenData = JSON.parse(atob(response.data.token.split('.')[1]));
-        console.log('Dados do token:', tokenData);
         localStorage.setItem('user', JSON.stringify({
           id: tokenData.sub,
           email: tokenData.email,
           nome: tokenData.nome,
           tipo: tokenData.tipo
         }));
-
-        console.log('Login bem-sucedido, redirecionando para a página inicial.');
-        navigate('/'); // Redireciona para a página inicial
-
+        navigate('/');
       } else {
-        console.error('Resposta inválida:', response.data);
         setError('Resposta inválida do servidor');
       }
     } catch (err: any) {
-      console.error('=== ERRO NO LOGIN ===');
-      console.error('Erro completo:', err);
-      if (err.response) {
-        console.error('Dados da resposta:', err.response.data);
-        console.error('Status da resposta:', err.response.status);
-      }
       setError('Email ou senha inválidos. Por favor, tente novamente.');
     }
   };

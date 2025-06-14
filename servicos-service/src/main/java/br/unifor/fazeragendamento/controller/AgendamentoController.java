@@ -3,7 +3,10 @@ package br.unifor.fazeragendamento.controller;
 import br.unifor.fazeragendamento.dto.AgendamentoRequestDTO;
 import br.unifor.fazeragendamento.dto.AgendamentoResponseDTO;
 import br.unifor.fazeragendamento.model.Agendamento;
+import br.unifor.fazeragendamento.model.ServicoEnum;
 import br.unifor.fazeragendamento.service.AgendamentoService;
+import lombok.AllArgsConstructor;
+import lombok.Data;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
@@ -25,6 +28,13 @@ public class AgendamentoController {
         AgendamentoResponseDTO dto = new AgendamentoResponseDTO();
         dto.setId(agendamento.getId());
         dto.setValorServico(agendamento.getValorServico());
+        dto.setNomePet(agendamento.getNomePet());
+        dto.setNomeCliente(agendamento.getNomeCliente());
+        dto.setServico(agendamento.getServico() != null ? agendamento.getServico().name() : null);
+        dto.setData(agendamento.getData());
+        dto.setStatusPagamento(
+                agendamento.getStatusPagamento() != null ? agendamento.getStatusPagamento().name() : null);
+        dto.setNomeFuncionario(agendamento.getNomeFuncionario());
         return dto;
     }
 
@@ -40,8 +50,30 @@ public class AgendamentoController {
     }
 
     @GetMapping
-    public List<Agendamento> listar() {
-        return service.listarTodos();
+    public List<AgendamentoResponseDTO> listar() {
+        try {
+            List<Agendamento> ags = service.listarTodos();
+            for (Agendamento ag : ags) {
+                System.out.println("Convertendo agendamento ID: " + ag.getId());
+            }
+            return ags.stream()
+                    .map(ag -> {
+                        try {
+                            return toResponseDTO(ag);
+                        } catch (Exception e) {
+                            System.err
+                                    .println("Erro ao converter agendamento ID: " + ag.getId() + ": " + e.getMessage());
+                            e.printStackTrace();
+                            return null;
+                        }
+                    })
+                    .filter(dto -> dto != null)
+                    .toList();
+        } catch (Exception e) {
+            System.err.println("Erro geral ao listar agendamentos: " + e.getMessage());
+            e.printStackTrace();
+            throw e;
+        }
     }
 
     @GetMapping("/{id}")
@@ -71,5 +103,48 @@ public class AgendamentoController {
             @RequestBody Agendamento.StatusPagamento novoStatus) {
         Agendamento agendamento = service.atualizarStatus(id, novoStatus);
         return ResponseEntity.ok(agendamento);
+    }
+
+    @DeleteMapping("/{id}")
+    public ResponseEntity<?> deletarPorId(@PathVariable Long id) {
+        try {
+            service.deletarPorId(id);
+            return ResponseEntity.noContent().build();
+        } catch (RuntimeException e) {
+            return ResponseEntity.status(HttpStatus.NOT_FOUND)
+                    .body(new ErrorResponse(e.getMessage()));
+        }
+    }
+
+    @PutMapping("/{id}")
+    public ResponseEntity<Agendamento> atualizarAgendamento(@PathVariable Long id,
+            @RequestBody Agendamento agendamentoAtualizado) {
+        Agendamento atualizado = service.atualizarAgendamento(id, agendamentoAtualizado);
+        return ResponseEntity.ok(atualizado);
+    }
+
+    @DeleteMapping("/todos")
+    public ResponseEntity<Void> deletarTodos() {
+        service.deletarTodos();
+        return ResponseEntity.noContent().build();
+    }
+
+    @PatchMapping("/{id}/servico")
+    public ResponseEntity<?> corrigirServico(
+            @PathVariable Long id,
+            @RequestParam ServicoEnum novoServico) {
+        try {
+            service.corrigirServico(id, novoServico);
+            return ResponseEntity.ok().build();
+        } catch (RuntimeException e) {
+            return ResponseEntity.status(HttpStatus.NOT_FOUND)
+                    .body(new ErrorResponse(e.getMessage()));
+        }
+    }
+
+    @Data
+    @AllArgsConstructor
+    private static class ErrorResponse {
+        private String message;
     }
 }

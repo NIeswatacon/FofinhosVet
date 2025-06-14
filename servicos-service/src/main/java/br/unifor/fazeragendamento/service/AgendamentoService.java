@@ -4,6 +4,7 @@ import br.unifor.fazeragendamento.dto.AgendamentoRequestDTO;
 import br.unifor.fazeragendamento.dto.ClienteDTO;
 import br.unifor.fazeragendamento.dto.PetDTO;
 import br.unifor.fazeragendamento.model.Agendamento;
+import br.unifor.fazeragendamento.model.ServicoEnum;
 import br.unifor.fazeragendamento.repository.AgendamentoRepository;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -105,5 +106,49 @@ public class AgendamentoService {
         Agendamento agendamento = pegarDetalhes(id);
         agendamento.setStatusPagamento(novoStatus);
         return agendamentoRepository.save(agendamento);
+    }
+
+    public void excluirAgendamento(Long id) {
+        agendamentoRepository.deleteById(id);
+    }
+
+    public Agendamento atualizarAgendamento(Long id, Agendamento agendamentoAtualizado) {
+        Agendamento existente = pegarDetalhes(id);
+        existente.setData(agendamentoAtualizado.getData());
+        existente.setServico(agendamentoAtualizado.getServico());
+        existente.setNomeFuncionario(agendamentoAtualizado.getNomeFuncionario());
+        existente.setNomePet(agendamentoAtualizado.getNomePet());
+        existente.setNomeCliente(agendamentoAtualizado.getNomeCliente());
+        existente.setValorServico(agendamentoAtualizado.getValorServico());
+        existente.setStatusPagamento(agendamentoAtualizado.getStatusPagamento());
+        existente.setClienteId(agendamentoAtualizado.getClienteId());
+        return agendamentoRepository.save(existente);
+    }
+
+    public void deletarTodos() {
+        agendamentoRepository.deleteAll();
+    }
+
+    public void deletarPorId(Long id) {
+        try {
+            if (!agendamentoRepository.existsById(id)) {
+                throw new RuntimeException("Agendamento não encontrado com ID: " + id);
+            }
+            agendamentoRepository.deleteById(id);
+        } catch (IllegalArgumentException e) {
+            if (e.getMessage().contains("ServicoEnum")) {
+                throw new RuntimeException(
+                        "Erro ao processar o serviço do agendamento. Valores válidos são: BANHO, TOSA, CONSULTA");
+            }
+            throw e;
+        }
+    }
+
+    public void corrigirServico(Long id, ServicoEnum novoServico) {
+        Agendamento agendamento = agendamentoRepository.findById(id)
+                .orElseThrow(() -> new RuntimeException("Agendamento não encontrado com ID: " + id));
+
+        agendamento.setServico(novoServico);
+        agendamentoRepository.save(agendamento);
     }
 }

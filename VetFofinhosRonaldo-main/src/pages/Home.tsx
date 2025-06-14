@@ -1,10 +1,47 @@
-import React from 'react';
+import React, { useEffect, useState } from 'react';
 import './Home.css';
 import { useNavigate } from 'react-router-dom';
 import NavBar from '../components/NavBar/NavBar';
+import axios from 'axios';
+import { API_URLS } from '../services/api';
 
 const Home: React.FC = () => {
   const navigate = useNavigate();
+  const [isLoggedIn, setIsLoggedIn] = useState(false);
+  const [hasPets, setHasPets] = useState<boolean | null>(null);
+  const [userName, setUserName] = useState<string | null>(null);
+
+  useEffect(() => {
+    const userStr = localStorage.getItem('user');
+    if (userStr) {
+      setIsLoggedIn(true);
+      const user = JSON.parse(userStr);
+      setUserName(user.nome || null);
+      // Buscar pets do usuário
+      axios.get(`${API_URLS.conta}/api/contas/clientes/${user.id}/pets`)
+        .then(res => {
+          setHasPets(Array.isArray(res.data) && res.data.length > 0);
+        })
+        .catch(() => setHasPets(false));
+    } else {
+      setIsLoggedIn(false);
+      setHasPets(null);
+    }
+  }, []);
+
+  let buttonText = 'Cadastre agora';
+  let buttonAction = () => navigate('/cadastro');
+  let subtitle = 'Cuidado, carinho e tudo para seu pet em um só lugar.';
+
+  if (isLoggedIn && hasPets === false) {
+    buttonText = 'Cadastrar Pet';
+    buttonAction = () => navigate('/cadastro-pet');
+    subtitle = userName ? `Olá, ${userName}! Cadastre seu primeiro pet para começar a usar todos os serviços.` : 'Cadastre seu primeiro pet para começar a usar todos os serviços.';
+  } else if (isLoggedIn && hasPets === true) {
+    buttonText = 'Ver meus agendamentos';
+    buttonAction = () => navigate('/agendamentos');
+    subtitle = userName ? `Bem-vindo de volta, ${userName}!` : 'Bem-vindo de volta!';
+  }
 
   return (
     <div className="home-container">
@@ -41,10 +78,19 @@ const Home: React.FC = () => {
       </div>
       <div className="home-content">
         <h1>Bem-vindo ao VetFofinhos!</h1>
-        <p className="subtitle">Cuidado, carinho e tudo para seu pet em um só lugar.</p>
-        <button className="cadastre-agora-btn" onClick={() => navigate('/cadastro')}>
-          Cadastre agora
+        <p className="subtitle">{subtitle}</p>
+        <button className="cadastre-agora-btn" onClick={buttonAction}>
+          {buttonText}
         </button>
+        {isLoggedIn && hasPets === true && (
+          <button
+            className="comprar-produtos-btn"
+            style={{ marginTop: 16, background: '#28a745', color: '#fff', padding: '12px 24px', borderRadius: 8, border: 'none', fontSize: '1.1rem', cursor: 'pointer' }}
+            onClick={() => navigate('/produtos')}
+          >
+            Comprar produtos
+          </button>
+        )}
       </div>
     </div>
   );

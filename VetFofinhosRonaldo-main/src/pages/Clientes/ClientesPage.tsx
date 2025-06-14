@@ -1,7 +1,8 @@
 import React, { useState, useEffect } from 'react';
 import NavBar from '../../components/NavBar/NavBar';
 import './ClientesPage.css';
-import api from '../../services/api';
+import api, { API_URLS } from '../../services/api';
+import axios from 'axios';
 
 interface Cliente {
   id: number;
@@ -27,7 +28,7 @@ const ClientesPage: React.FC = () => {
     try {
       setLoading(true);
       console.log('Iniciando carregamento de clientes...');
-      const response = await api.get<Cliente[]>('/api/contas/clientes');
+      const response = await axios.get<Cliente[]>(`${API_URLS.conta}/api/contas/clientes`);
       console.log('Resposta da API:', response.data);
       setClientes(response.data);
       setError(null);
@@ -67,19 +68,29 @@ const ClientesPage: React.FC = () => {
     }
   };
 
+  const excluirCliente = async (id: number) => {
+    if (!window.confirm('Tem certeza que deseja excluir este cliente?')) return;
+    try {
+      await axios.delete(`${API_URLS.conta}/api/contas/${id}`);
+      setClientes(clientes.filter(c => c.id !== id));
+    } catch (err) {
+      alert('Erro ao excluir cliente.');
+    }
+  };
+
   return (
     <div className="clientes-container">
       <NavBar />
       <div className="clientes-content">
         <h1>Gerenciamento de Clientes</h1>
-        
+
         {loading && <div className="loading">Carregando clientes...</div>}
         {error && <div className="error-message">{error}</div>}
-        
+
         {!loading && !error && clientes.length === 0 && (
           <div className="no-data-message">Nenhum cliente encontrado.</div>
         )}
-        
+
         {!loading && !error && clientes.length > 0 && (
           <div className="table-container">
             <table className="clientes-table">
@@ -92,6 +103,7 @@ const ClientesPage: React.FC = () => {
                   <th>Telefone</th>
                   <th>Endereço</th>
                   <th>Data de Cadastro</th>
+                  <th>Ações</th>
                 </tr>
               </thead>
               <tbody>
@@ -104,6 +116,11 @@ const ClientesPage: React.FC = () => {
                     <td>{formatarTelefone(cliente.telefone)}</td>
                     <td>{cliente.endereco}</td>
                     <td>{formatarData(cliente.data_cadastro)}</td>
+                    <td>
+                      <button style={{ background: '#dc3545', color: '#fff', border: 'none', borderRadius: 6, padding: '6px 12px', cursor: 'pointer' }} onClick={() => excluirCliente(cliente.id)}>
+                        Excluir
+                      </button>
+                    </td>
                   </tr>
                 ))}
               </tbody>

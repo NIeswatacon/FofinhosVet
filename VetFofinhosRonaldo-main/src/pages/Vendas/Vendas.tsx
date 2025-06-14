@@ -12,6 +12,7 @@ const Vendas: React.FC = () => {
   const [carrinho, setCarrinho] = useState<CarrinhoDetalhado | null>(null);
   const [modalCarrinhoVisivel, setModalCarrinhoVisivel] = useState(false);
   const [currentUserId, setCurrentUserId] = useState<number | null>(null); // Estado para o ID do usuário
+  const [user, setUser] = useState<any>(null);
 
   // Função auxiliar para obter o ID do usuário do localStorage
   const getUserId = (): number | null => {
@@ -54,6 +55,8 @@ const Vendas: React.FC = () => {
   // Efeito para carregar o ID do usuário do localStorage quando o componente monta
   useEffect(() => {
     setCurrentUserId(getUserId());
+    const userStr = localStorage.getItem('user');
+    if (userStr) setUser(JSON.parse(userStr));
   }, []);
 
   // Efeito para buscar o carrinho inicial quando o ID do cliente muda
@@ -93,18 +96,21 @@ const Vendas: React.FC = () => {
   return (
     <div>
       <NavBar />
-      <IconeCarrinho
-        onClick={toggleModalCarrinho}
-        itemCount={calcularTotalItensCarrinho()}
-        isModalVisible={modalCarrinhoVisivel}
-      />
-
-      <ModalCarrinho
-        isVisible={modalCarrinhoVisivel}
-        onClose={toggleModalCarrinho}
-        carrinhoPai={carrinho}
-        onCarrinhoChange={handleCarrinhoAtualizado}
-      />
+      {(!user || user?.tipo !== 'ADMIN') && (
+        <>
+          <IconeCarrinho
+            onClick={toggleModalCarrinho}
+            itemCount={calcularTotalItensCarrinho()}
+            isModalVisible={modalCarrinhoVisivel}
+          />
+          <ModalCarrinho
+            isVisible={modalCarrinhoVisivel}
+            onClose={toggleModalCarrinho}
+            carrinhoPai={carrinho}
+            onCarrinhoChange={handleCarrinhoAtualizado}
+          />
+        </>
+      )}
 
       <div style={{ padding: '20px', marginTop: '20px' }}>
         <h2 style={{
@@ -118,6 +124,7 @@ const Vendas: React.FC = () => {
           <GridProdutos
             idCliente={currentUserId}
             onCarrinhoAtualizado={handleCarrinhoAtualizado}
+            user={user}
           />
         ) : (
           <div style={{ textAlign: 'center', padding: '20px' }}>

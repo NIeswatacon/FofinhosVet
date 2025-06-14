@@ -13,6 +13,7 @@ import ClientesPage from "../pages/Clientes/ClientesPage";
 // e que o caminho de importação abaixo está correto.
 import MainLayout from "../layouts/MainLayout/MainLayout";
 import ErrorBoundary from "../components/ErrorBoundary/ErrorBoundary";
+import AdminAgendamentosPage from "../pages/AdminAgendamentosPage";
 
 export default function AppRoutes() {
   return useRoutes([
@@ -21,13 +22,16 @@ export default function AppRoutes() {
     { path: '/cadastro', element: <CadastroPaga /> },
     { path: '/cadastro-pet', element: <CadastroPet /> },
     // Use o MainLayout real para as rotas que precisam da NavBar
-    { element: <MainLayout />, children: [
+    {
+      element: <MainLayout />, children: [
         { path: '/agendamentos', element: <AgendamentosPage /> },
         { path: '/pagamento', element: <PagamentoComponent /> },
         { path: '/cartao', element: <ErrorBoundary><Cartao /></ErrorBoundary> },
         { path: '/produtos', element: <Vendas /> },
         { path: '/clientes', element: <ClientesPage /> },
+        { path: '/admin-agendamentos', element: <AdminAgendamentosPage /> },
         //  { path: '*', element: <NotFoundPage /> } // Se tiver uma página NotFound, pode ir aqui
-    ]}
+      ]
+    }
   ]);
 }

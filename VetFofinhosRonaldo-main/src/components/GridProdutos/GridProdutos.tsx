@@ -9,6 +9,7 @@ import type { ProdutoBase, CarrinhoDetalhado, ApiResponse } from '../../types/in
 interface GridProdutosProps {
   idCliente: number;
   onCarrinhoAtualizado: (carrinho: CarrinhoDetalhado) => void;
+  user?: any;
 }
 
 const getUserId = (): number | null => {
@@ -25,7 +26,7 @@ const getUserId = (): number | null => {
   }
 };
 
-const GridProdutos: React.FC<GridProdutosProps> = ({ idCliente, onCarrinhoAtualizado }) => {
+const GridProdutos: React.FC<GridProdutosProps> = ({ idCliente, onCarrinhoAtualizado, user }) => {
   const [produtos, setProdutos] = useState<ProdutoBase[]>([]);
   const [loading, setLoading] = useState<boolean>(true);
   const [error, setError] = useState<string | null>(null);
@@ -73,6 +74,7 @@ const GridProdutos: React.FC<GridProdutosProps> = ({ idCliente, onCarrinhoAtuali
           key={produto.id}
           produto={produto}
           onProdutoAdicionado={onCarrinhoAtualizado}
+          user={user}
         />
       ))}
     </div>

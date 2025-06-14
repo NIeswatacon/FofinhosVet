@@ -62,6 +62,7 @@ api.interceptors.response.use(
 interface CardProdutoProps {
     produto: ProdutoBase;
     onProdutoAdicionado: (carrinho: CarrinhoDetalhado) => void;
+    user?: any;
 }
 
 // Função auxiliar para obter o ID do usuário do localStorage (local para este componente)
@@ -79,8 +80,11 @@ const getUserId = (): number | null => {
     }
 };
 
-const CardProduto: React.FC<CardProdutoProps> = ({ produto, onProdutoAdicionado }) => {
+const CardProduto: React.FC<CardProdutoProps> = ({ produto, onProdutoAdicionado, user }) => {
     const [isAdding, setIsAdding] = React.useState(false); // Estado para rastrear se a adição está em progresso
+    const [editando, setEditando] = React.useState(false);
+    const [novoNome, setNovoNome] = React.useState(produto.nome);
+    const [novoPreco, setNovoPreco] = React.useState(produto.preco);
 
     const getImagemGenerica = (tipo: ProdutoBase['tipo']): string => {
         const basePath = '/img/'; // Ajuste se suas imagens estiverem em outro lugar na pasta public
@@ -187,13 +191,57 @@ const CardProduto: React.FC<CardProdutoProps> = ({ produto, onProdutoAdicionado 
                 )}
             </div>
             <div className={styles.productInfo}>
-                <h3>{produto.nome}</h3>
-                <p>R$ {produto.preco.toFixed(2)}</p>
+                {editando ? (
+                    <>
+                        <input value={novoNome} onChange={e => setNovoNome(e.target.value)} style={{ marginBottom: 4, width: '90%' }} />
+                        <input type="number" value={novoPreco} onChange={e => setNovoPreco(Number(e.target.value))} style={{ marginBottom: 4, width: '90%' }} />
+                    </>
+                ) : (
+                    <>
+                        <h3>{produto.nome}</h3>
+                        <p>R$ {produto.preco.toFixed(2)}</p>
+                    </>
+                )}
             </div>
-            <button onClick={handleAdicionarAoCarrinho} className={styles.addToCartButton} disabled={isAdding}>
-                {isAdding ? 'Adicionando...' : 'Adicionar ao Carrinho'}
-            </button>
-
+            {user?.tipo === 'ADMIN' ? (
+                <div style={{ display: 'flex', gap: 8, flexDirection: 'column', marginTop: 8 }}>
+                    {editando ? (
+                        <>
+                            <button className={styles.addToCartButton} style={{ background: '#007bff' }} onClick={async () => {
+                                // Chamar endpoint de edição de produto (ajuste a URL conforme seu backend)
+                                try {
+                                    await axios.put(`https://microservicevendas-production.up.railway.app/produtos/${produto.id}`, {
+                                        nome: novoNome,
+                                        preco: novoPreco
+                                    });
+                                    setEditando(false);
+                                    window.location.reload();
+                                } catch {
+                                    alert('Erro ao editar produto.');
+                                }
+                            }}>Salvar</button>
+                            <button className={styles.addToCartButton} style={{ background: '#888' }} onClick={() => setEditando(false)}>Cancelar</button>
+                        </>
+                    ) : (
+                        <>
+                            <button className={styles.addToCartButton} style={{ background: '#007bff' }} onClick={() => setEditando(true)}>Editar</button>
+                            <button className={styles.addToCartButton} style={{ background: '#dc3545' }} onClick={async () => {
+                                if (!window.confirm('Tem certeza que deseja excluir este produto?')) return;
+                                try {
+                                    await axios.delete(`https://microservicevendas-production.up.railway.app/produtos/${produto.id}`);
+                                    window.location.reload();
+                                } catch {
+                                    alert('Erro ao excluir produto.');
+                                }
+                            }}>Excluir</button>
+                        </>
+                    )}
+                </div>
+            ) : (
+                <button onClick={handleAdicionarAoCarrinho} className={styles.addToCartButton} disabled={isAdding}>
+                    {isAdding ? 'Adicionando...' : 'Adicionar ao Carrinho'}
+                </button>
+            )}
         </div>
     );
 };

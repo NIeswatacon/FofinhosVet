@@ -63,6 +63,8 @@ export const AgendamentosPage = () => {
   const [isSubmitting, setIsSubmitting] = useState(false); // Estado para o loading do submit
   const [error, setError] = useState<string | null>(null);
   const [successMessage, setSuccessMessage] = useState<string | null>(null);
+  const [user, setUser] = useState<any>(null);
+
   // Função para obter o ID do usuário do localStorage
   const getUserId = (): number | null => {
     const userStr = localStorage.getItem('user');
@@ -102,15 +104,26 @@ export const AgendamentosPage = () => {
     }
   }, []); // Executa apenas uma vez na montagem
 
-  const fetchAgendamentos = async () => {
-    // A verificação do loggedInCliente já garante que teremos o ID.
-    if (!loggedInCliente) return;
+  useEffect(() => {
+    const userStr = localStorage.getItem('user');
+    if (userStr) {
+      setUser(JSON.parse(userStr));
+    }
+  }, []);
 
+  const fetchAgendamentos = async () => {
     setIsLoading(true);
     setError(null);
     try {
-      // Usando o novo endpoint otimizado do backend
-      const response = await axios.get<Agendamento[]>(`${API_AGENDAMENTOS_BASE_URL}/cliente/${loggedInCliente.id}`);
+      let response;
+      if (user?.tipo === 'ADMIN') {
+        response = await axios.get<Agendamento[]>(`${API_AGENDAMENTOS_BASE_URL}`);
+      } else if (loggedInCliente) {
+        response = await axios.get<Agendamento[]>(`${API_AGENDAMENTOS_BASE_URL}/cliente/${loggedInCliente.id}`);
+      } else {
+        setAgendamentos([]);
+        return;
+      }
       setAgendamentos(response.data);
     } catch (err) {
       setError('Falha ao buscar agendamentos.');
@@ -276,6 +289,17 @@ export const AgendamentosPage = () => {
       setIsSubmitting(false);
     }
   };
+
+  const excluirAgendamento = async (id: number) => {
+    if (!window.confirm('Tem certeza que deseja excluir este agendamento?')) return;
+    try {
+      await axios.delete(`${API_AGENDAMENTOS_BASE_URL}/${id}`);
+      setAgendamentos(ags => ags.filter(a => a.id !== id));
+    } catch (err) {
+      alert('Erro ao excluir agendamento.');
+    }
+  };
+
   // 1. Estado inicial de carregamento/verificação ou usuário não logado (erro do getUserId)
   if (!clienteIdFromAuth) {
     const message = error || "Verificando autenticação...";
@@ -390,6 +414,11 @@ export const AgendamentosPage = () => {
                       <div className={styles.statusBadge}>
                         <strong>Status:</strong> {ag.statusPagamento || 'PENDENTE'}
                       </div>
+                      {user?.tipo === 'ADMIN' && (
+                        <button style={{ background: '#dc3545', color: '#fff', border: 'none', borderRadius: 6, padding: '6px 12px', cursor: 'pointer', marginTop: 8 }} onClick={() => excluirAgendamento(ag.id)}>
+                          Excluir
+                        </button>
+                      )}
                     </li>
                   ))}
                 </ul>

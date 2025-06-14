@@ -56,3 +56,109 @@
   font-weight: bold; /* Texto em negrito para link ativo */
   color: #ffffff;
 }
+
+.accountCircle {
+  width: 40px;
+  height: 40px;
+  border-radius: 50%;
+  background: #007bff;
+  color: #fff;
+  border: none;
+  font-size: 1.3rem;
+  font-weight: bold;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  cursor: pointer;
+  box-shadow: 0 2px 8px rgba(0,0,0,0.10);
+  transition: background 0.2s;
+}
+.accountCircle:hover {
+  background: #0056b3;
+}
+
+.accountPopup {
+  position: fixed;
+  top: 80px;
+  right: 32px;
+  width: 340px;
+  background: #fff;
+  border-radius: 16px;
+  box-shadow: 0 8px 32px rgba(0,0,0,0.18);
+  padding: 28px 24px 20px 24px;
+  z-index: 1000;
+  animation: fadeInPopup 0.25s;
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+}
+@keyframes fadeInPopup {
+  from { opacity: 0; transform: translateY(-20px); }
+  to { opacity: 1; transform: translateY(0); }
+}
+.accountPopup h3 {
+  margin-top: 0;
+  margin-bottom: 10px;
+  color: #007bff;
+  font-size: 1.3rem;
+  text-align: left;
+}
+.accountPopup div, .accountPopup ul {
+  font-size: 1rem;
+  color: #333;
+}
+.accountPopup hr {
+  margin: 10px 0;
+  border: none;
+  border-top: 1px solid #eee;
+}
+.petsList {
+  list-style: none;
+  padding: 0;
+  margin: 0 0 10px 0;
+}
+.petsList li {
+  margin-bottom: 4px;
+  padding-left: 8px;
+  border-left: 2px solid #007bff;
+  font-size: 0.98rem;
+}
+.popupBtn {
+  background: #007bff;
+  color: #fff;
+  border: none;
+  border-radius: 8px;
+  padding: 10px 18px;
+  margin-top: 8px;
+  font-size: 1rem;
+  font-weight: 500;
+  cursor: pointer;
+  transition: background 0.2s;
+  margin-bottom: 6px;
+}
+.popupBtn:hover {
+  background: #0056b3;
+}
+.popupBtnLogout {
+  background: #dc3545;
+  color: #fff;
+  border: none;
+  border-radius: 8px;
+  padding: 10px 18px;
+  font-size: 1rem;
+  font-weight: 500;
+  cursor: pointer;
+  margin-top: 4px;
+  transition: background 0.2s;
+}
+.popupBtnLogout:hover {
+  background: #a71d2a;
+}
+@media (max-width: 600px) {
+  .accountPopup {
+    right: 8px;
+    width: 95vw;
+    min-width: 0;
+    padding: 18px 8px 14px 8px;
+  }
+}
