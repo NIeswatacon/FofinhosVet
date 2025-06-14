@@ -10,6 +10,7 @@ const Home: React.FC = () => {
   const [isLoggedIn, setIsLoggedIn] = useState(false);
   const [hasPets, setHasPets] = useState<boolean | null>(null);
   const [userName, setUserName] = useState<string | null>(null);
+  const [userTipo, setUserTipo] = useState<string | null>(null);
 
   useEffect(() => {
     const userStr = localStorage.getItem('user');
@@ -17,15 +18,19 @@ const Home: React.FC = () => {
       setIsLoggedIn(true);
       const user = JSON.parse(userStr);
       setUserName(user.nome || null);
-      // Buscar pets do usuário
-      axios.get(`${API_URLS.conta}/api/contas/clientes/${user.id}/pets`)
-        .then(res => {
-          setHasPets(Array.isArray(res.data) && res.data.length > 0);
-        })
-        .catch(() => setHasPets(false));
+      setUserTipo(user.tipo || null);
+      // Buscar pets do usuário (apenas se não for admin)
+      if (user.tipo !== 'ADMIN') {
+        axios.get(`${API_URLS.conta}/api/contas/clientes/${user.id}/pets`)
+          .then(res => {
+            setHasPets(Array.isArray(res.data) && res.data.length > 0);
+          })
+          .catch(() => setHasPets(false));
+      }
     } else {
       setIsLoggedIn(false);
       setHasPets(null);
+      setUserTipo(null);
     }
   }, []);
 
@@ -33,7 +38,11 @@ const Home: React.FC = () => {
   let buttonAction = () => navigate('/cadastro');
   let subtitle = 'Cuidado, carinho e tudo para seu pet em um só lugar.';
 
-  if (isLoggedIn && hasPets === false) {
+  if (userTipo === 'ADMIN') {
+    buttonText = 'Ver clientes';
+    buttonAction = () => navigate('/clientes');
+    subtitle = userName ? `Bem-vindo, administrador ${userName}! Gerencie clientes, agendamentos e produtos pelo menu acima.` : 'Bem-vindo, administrador! Gerencie clientes, agendamentos e produtos pelo menu acima.';
+  } else if (isLoggedIn && hasPets === false) {
     buttonText = 'Cadastrar Pet';
     buttonAction = () => navigate('/cadastro-pet');
     subtitle = userName ? `Olá, ${userName}! Cadastre seu primeiro pet para começar a usar todos os serviços.` : 'Cadastre seu primeiro pet para começar a usar todos os serviços.';
@@ -79,10 +88,12 @@ const Home: React.FC = () => {
       <div className="home-content">
         <h1>Bem-vindo ao VetFofinhos!</h1>
         <p className="subtitle">{subtitle}</p>
-        <button className="cadastre-agora-btn" onClick={buttonAction}>
-          {buttonText}
-        </button>
-        {isLoggedIn && hasPets === true && (
+        {userTipo !== 'ADMIN' && (
+          <button className="cadastre-agora-btn" onClick={buttonAction}>
+            {buttonText}
+          </button>
+        )}
+        {isLoggedIn && hasPets === true && userTipo !== 'ADMIN' && (
           <button
             className="comprar-produtos-btn"
             style={{ marginTop: 16, background: '#28a745', color: '#fff', padding: '12px 24px', borderRadius: 8, border: 'none', fontSize: '1.1rem', cursor: 'pointer' }}
